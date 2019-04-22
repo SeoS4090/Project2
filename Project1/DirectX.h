@@ -8,11 +8,12 @@ protected:
 	LPDIRECT3DDEVICE9		m_pd3dDevice;
 	LPDIRECT3DVERTEXBUFFER9	m_pVB;
 	LPDIRECT3DINDEXBUFFER9	m_pIB;
-
+	D3DPRESENT_PARAMETERS	d3dpp;
+	
 public:
 				DirectX();
+				HRESULT initDirectX(HWND hWnd);
 				~DirectX();
-	HRESULT		initDirectX(HWND hWnd);
 	void		Render();
 };
 

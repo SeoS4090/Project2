@@ -1,6 +1,6 @@
 /**========================================================================
-* 계층 구조
-* 계층 구조를 이해하고 계층간의 행렬 실행 순서를 공부한다.
+* KeyFrameAnimation
+* 선형 보간을 이용한 애니메이션 처리
 *=========================================================================*/
 
 #include <d3d9.h>
@@ -15,48 +15,31 @@ LPDIRECT3DDEVICE9		g_pd3dDevice = NULL;
 LPDIRECT3DVERTEXBUFFER9	g_pVB = NULL;
 LPDIRECT3DINDEXBUFFER9	g_pIB = NULL;
 
+D3DXMATRIXA16			g_matTMParent; //부모의 기본 행렬
+D3DXMATRIXA16			g_matRParent; //부모의 회전 행렬
 
+D3DXMATRIXA16			g_matTMChild; //자식의 기본 행렬
+D3DXMATRIXA16			g_matRChild; //자식의 회전 행렬
 
-struct planet
-{
-	D3DXMATRIXA16			m_matScale; //크기
-	D3DXMATRIXA16			m_matT; //이동 행렬
-	D3DXMATRIXA16			m_matR;	 //자전 행렬
-	D3DXMATRIXA16			m_matWR; //공전 행렬
-	D3DXMATRIXA16			m_mat;
+float					g_fRot = 0.0f;
+float					g_fchRot = 0.0f;
 
-	planet() {
-		D3DXMatrixScaling(&m_matScale, 1, 1, 1);
-		D3DXMatrixTranslation(&m_matT, 0, 0, 0);
-		D3DXMatrixRotationY(&m_matR, 0);
-		D3DXMatrixRotationY(&m_matWR, 0);
-	}
-	
-	D3DXMATRIXA16			calcMatrix(D3DXMATRIXA16& matTMparent) {
-		m_mat = calcMatrix() * matTMparent;
-		return m_mat;}
-
-	D3DXMATRIXA16			calcMatrix() { 
-
-		m_mat = m_matScale *	m_matR *m_matT *m_matWR;
-		return m_mat; }
-
-	D3DXMATRIXA16 getMatrix() { return m_mat; }
-};
-
-bool bFullScreen = TRUE;
 struct CUSTOMVERTEX
 {
 	FLOAT x, y, z;
 	DWORD color;
 };
 
+#define ROT_DELTA 0.001f;
 #define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZ | D3DFVF_DIFFUSE)
 
 struct MYINDEX
 {
 	WORD _0, _1, _2;
 };
+
+D3DXVECTOR3			g_aniPos[2];
+D3DXQUATERNION		g_aniRot[2];
 
 /**========================================================================
 * Direct3D 초기화
@@ -71,7 +54,7 @@ HRESULT InitD3D(HWND hWnd)
 	D3DPRESENT_PARAMETERS d3dpp;
 	ZeroMemory(&d3dpp, sizeof(d3dpp));
 
-	d3dpp.Windowed = bFullScreen;
+	d3dpp.Windowed = TRUE;
 	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
 	d3dpp.EnableAutoDepthStencil = TRUE;
@@ -168,6 +151,26 @@ HRESULT InitIB()
 }
 
 /**========================================================================
+* 애니메이션 초기화
+*=========================================================================*/
+void InitAnimation()
+{
+	g_aniPos[0] = D3DXVECTOR3(0, 0, 0); // 위치 변화에 사용 할 벡터 값
+	g_aniPos[1] = D3DXVECTOR3(5, 5, 5); // 위치 변화에 사용 할 벡터 값
+
+	FLOAT Yaw = D3DX_PI * 90.0f / 180.0f; // Y축 90도 회전
+	FLOAT Pitch = 0;
+	FLOAT Roll = 0;
+
+	D3DXQuaternionRotationYawPitchRoll(&g_aniRot[0], Yaw, Pitch, Roll); // 사원수(Y축 90도)
+
+	Yaw = 0;
+	Pitch = D3DX_PI * 90.0f / 180.0f; // X축 90도 회전
+	Roll = 0;
+	D3DXQuaternionRotationYawPitchRoll(&g_aniRot[1], Yaw, Pitch, Roll); // 사원수(X축 90도)
+}
+
+/**========================================================================
 * 기하 정보 초기화
 *=========================================================================*/
 
@@ -178,6 +181,8 @@ HRESULT InitGeometry()
 
 	if (FAILED(InitIB()))
 		return E_FAIL;
+
+	InitAnimation();
 
 	return S_OK;
 }
@@ -191,7 +196,7 @@ void SetupCamera()
 	D3DXMatrixIdentity(&matWorld);
 	g_pd3dDevice->SetTransform(D3DTS_WORLD, &matWorld);
 
-	D3DXVECTOR3 vEyePt(20.0f, 50, -50.0f);
+	D3DXVECTOR3 vEyePt(0.0f, 10.0f, -20.0f);
 	D3DXVECTOR3 vLookatPt(0.0f, 0.0f, 0.0f);
 	D3DXVECTOR3 vUpVec(0.0f, 1.0f, 0.0f);
 
@@ -200,11 +205,54 @@ void SetupCamera()
 	g_pd3dDevice->SetTransform(D3DTS_VIEW, &matView);
 
 	D3DXMATRIXA16 matProj;
-	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI /4, 1.0f, 1.0f, 100.0f);
+	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4, 1.0f, 1.0f, 100.0f);
 	g_pd3dDevice->SetTransform(D3DTS_PROJECTION, &matProj);
 }
 
+/**========================================================================
+* 애니메이션 행렬 생성
+*=========================================================================*/
+void Animate()
+{
+	static float t = 0;
+	static float cht = 0;
+	float x, y, z;
+	D3DXQUATERNION quat;
 
+	if (t > 1.0f || t < -1.0f)
+		t = 0.0f;
+	if (cht > 3.0f || cht < -3.0f)
+		cht = 0.0f;
+
+	D3DXVECTOR3 v;
+	//이동값의 선형 보간 
+	D3DXVec3Lerp(&v, &g_aniPos[0], &g_aniPos[1], t);
+	//이동 행렬값으로 변환
+	D3DXMatrixTranslation(&g_matTMParent, v.x, v.y, v.z);
+
+	//회전값의 구면 선형 보간
+	D3DXQuaternionSlerp(&quat, &g_aniRot[0], &g_aniRot[1], t);
+	//사원수를 회전 행렬값으로 변환
+	D3DXMatrixRotationQuaternion(&g_matRParent, &quat);
+
+	t += g_fRot;
+
+	cht += g_fchRot;
+
+
+	//자식 메시의 z축 회전 행렬
+	D3DXQuaternionSlerp(&quat, &g_aniRot[0], &g_aniRot[1], cht);
+
+	D3DXMatrixRotationQuaternion(&g_matRChild, &quat);
+
+	//D3DXMatrixRotationZ(&g_matRChild, GetTickCount() / 500.0f);
+
+	//특정 vector를 축으로 하는 행렬
+	//D3DXMatrixRotationAxis(&g_matRChild, nomalVec, Angle);
+
+	//자식 메시는 원점으로 부터 (3, 3, 3)의 거리에 있다.
+	D3DXMatrixTranslation(&g_matTMChild, 3, 3, 3);
+}
 
 /**========================================================================
 * Release - 초기화 객체들 소거
@@ -220,7 +268,7 @@ void Cleanup()
 	if (g_pd3dDevice != NULL)
 		g_pd3dDevice->Release();
 
-	if (g_pD3D != NULL)	
+	if (g_pD3D != NULL)
 		g_pD3D->Release();
 }
 
@@ -229,13 +277,11 @@ void Cleanup()
 *=========================================================================*/
 void DrawMesh(D3DXMATRIXA16* pMat)
 {
-	
 	g_pd3dDevice->SetTransform(D3DTS_WORLD, pMat);
 	g_pd3dDevice->SetStreamSource(0, g_pVB, 0, sizeof(CUSTOMVERTEX));
 	g_pd3dDevice->SetFVF(D3DFVF_CUSTOMVERTEX);
 	g_pd3dDevice->SetIndices(g_pIB);
 	g_pd3dDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 8, 0, 12);
-	
 }
 
 /**========================================================================
@@ -244,34 +290,27 @@ void DrawMesh(D3DXMATRIXA16* pMat)
 void Render()
 {
 	D3DXMATRIXA16 matWorld;
-	
 
-	g_pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
+	g_pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 255), 1.0f, 0);
 
-	//스케일 자전 이동 공전 부모
+	Animate();
 
-	planet solar[10];
-
-	for (int i = 1; i < 9; i++)
-	{
-		D3DXMatrixTranslation(&solar[i].m_matT, solar[i-1].m_matT._41 + 3, solar[i - 1].m_matT._42+1, solar[i - 1].m_matT._43 + 2);
-		D3DXMatrixRotationY(&solar[i].m_matR, GetTickCount() / 500.0f);
-		D3DXMatrixRotationY(&solar[i].m_matWR, GetTickCount() * i / 1024.0f);
-	}
-
-	D3DXMatrixScaling(&solar[9].m_matScale, 0.5, 0.5, 0.5);
-	D3DXMatrixTranslation(&solar[9].m_matT,3,0,3);
-	D3DXMatrixRotationY(&solar[9].m_matWR, GetTickCount() / 1024.0f);
-	
 	if (SUCCEEDED(g_pd3dDevice->BeginScene()))
 	{
 		//그리는 순서가 아닌 행렬 적용 순서가 중요하다.
-		for (int i = 0; i < 10; i++)
-		{
-			if (i == 0)DrawMesh(&solar[i].calcMatrix());
-			else if(i == 9) DrawMesh(&solar[i].calcMatrix(solar[3].calcMatrix()));
-			else DrawMesh(&solar[i].calcMatrix(solar[0].calcMatrix()));
-		}
+		
+		//부모의 변환을 만든다 - 회전 * 기본 변환
+		matWorld = g_matRParent * g_matTMParent;
+
+		//적용된 변환을 기반으로 부모 객체를 그린다.
+		DrawMesh(&matWorld);
+
+		//자식의 변환을 만든다 - 자신의 회전 * 자신의 기본 변환 * 부모의 회전 * 부모의 기본변환
+		//matWorld = matrix * g_matRChild * g_matTMChild * g_matRParent * g_matTMParent;
+		matWorld = g_matRChild * g_matTMChild * matWorld;
+
+		//적용된 변환을 기반으로 자식 객체를 그린다.
+		DrawMesh(&matWorld);
 
 		g_pd3dDevice->EndScene();
 	}
@@ -290,10 +329,26 @@ LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		Cleanup();
 		PostQuitMessage(0);
 		return 0;
+	case WM_KEYDOWN:
+
+		if (wParam == VK_LEFT)
+			g_fRot -= ROT_DELTA;
+
+		if (wParam == VK_RIGHT)
+			g_fRot += ROT_DELTA;
+
+		if (wParam == VK_UP)
+			g_fchRot += ROT_DELTA;
+
+		if (wParam == VK_DOWN)
+			g_fchRot -= ROT_DELTA;
+
+		break;
 	}
 
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
+
 /**========================================================================
 * WinMain
 *=========================================================================*/
@@ -301,13 +356,13 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 {
 	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, MsgProc,
 		0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL,
-		"D3D Hierarchy", NULL };
+		"D3D Animation", NULL };
 
 	RegisterClassEx(&wc);
 
-	HWND hWnd = CreateWindow("D3D Hierarchy", "D3D Hierarchy", WS_OVERLAPPEDWINDOW,
-		0, 0, 1000, 1000, GetDesktopWindow(), NULL, wc.hInstance, NULL);
-	
+	HWND hWnd = CreateWindow("D3D Animation", "D3D Animation", WS_OVERLAPPEDWINDOW,
+		100, 100, 500, 500, GetDesktopWindow(), NULL, wc.hInstance, NULL);
+
 	if (SUCCEEDED(InitD3D(hWnd)))
 	{
 		if (SUCCEEDED(InitGeometry()))
@@ -335,6 +390,6 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 		}
 	}
 
-	UnregisterClass("D3D Hierarchy", wc.hInstance);
+	UnregisterClass("D3D Animation", wc.hInstance);
 	return 0;
 }

@@ -4,6 +4,8 @@
 
 DirectX::DirectX()
 {
+	ZeroMemory(&d3dpp, sizeof(d3dpp));
+	d3dpp.Windowed = TRUE;
 }
 
 HRESULT DirectX::initDirectX(HWND hWnd)
@@ -15,23 +17,24 @@ HRESULT DirectX::initDirectX(HWND hWnd)
 		{
 			return E_FAIL;
 		}
+		D3DDISPLAYMODE displaymode;
+		
+		d3dpp.Windowed = !d3dpp.Windowed;
 
-		D3DPRESENT_PARAMETERS d3dpp;
-		ZeroMemory(&d3dpp, sizeof(d3dpp));
-
-		d3dpp.Windowed = TRUE;
+		d3dpp.hDeviceWindow = hWnd;
 		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 		d3dpp.BackBufferFormat = D3DFMT_X8R8G8B8;
 		d3dpp.EnableAutoDepthStencil = TRUE;
 		d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
 		d3dpp.BackBufferCount = 1;
+
+		
+		d3dpp.BackBufferWidth = displaymode.Width;
+		d3dpp.BackBufferHeight = displaymode.Height;
+		d3dpp.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
 		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-
 	
-
-		if (FAILED(m_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd,
-			D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-			&d3dpp, &m_pd3dDevice)))
+		if (FAILED(m_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd,D3DCREATE_SOFTWARE_VERTEXPROCESSING,&d3dpp, &m_pd3dDevice)))
 		{
 			return E_FAIL;
 		}

@@ -54,6 +54,10 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 		else
 		{
 			dx3.Render();
+			if (GetKeyState(VK_RETURN) & 0x8000 && GetKeyState(VK_MENU) & 0x8000)
+			{
+				dx3.initDirectX(hWnd);
+			}
 		}
 	}
 
