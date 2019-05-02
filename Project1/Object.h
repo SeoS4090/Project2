@@ -10,10 +10,13 @@ private:
 	LPDIRECT3DVERTEXBUFFER9 VB;
 	LPDIRECT3DINDEXBUFFER9	IB;
 	LPDIRECT3DTEXTURE9		Texture;
-public:
-	virtual HRESULT			Init();
+
+
+
 	virtual HRESULT			initVB();
 	virtual HRESULT			InitIB();
+public:
+	virtual HRESULT			Init();
 	virtual HRESULT			InitTexture(const char * filename);
 
 
@@ -21,6 +24,7 @@ public:
 	LPDIRECT3DINDEXBUFFER9	getIB() { return IB; }
 
 	virtual		void		update(float fEilpse);
+	void					setPosition(float cx, float cy, float cz);
 	void					DrawMesh(D3DXMATRIXA16* pMat = 0);
 							Object(LPDIRECT3DDEVICE9* _deviece);
 							~Object();

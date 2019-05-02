@@ -22,7 +22,7 @@ LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		if (!clicked)
 			break;
 
-		if (wParam == MK_CONTROL)
+		if (wParam == MK_CONTROL + MK_LBUTTON)
 		{
 			DirectX::GetInstance()->EyeMoved(lParam);
 		}

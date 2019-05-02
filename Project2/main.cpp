@@ -20,7 +20,7 @@ LPDIRECT3DDEVICE9		g_pd3dDevice = NULL;
 LPDIRECT3DVERTEXBUFFER9	g_pVB = NULL;
 LPDIRECT3DTEXTURE9		g_pTexture = NULL; // 텍스처 인터페이스 선언
 
-struct OBJECTVERTEX
+struct CUSTOMEVERTEX
 {
 	D3DXVECTOR3 position;
 	D3DCOLOR	color;
@@ -31,7 +31,7 @@ struct OBJECTVERTEX
 #ifdef SHOW_HOW_TO_USE_TCI
 #define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZ | D3DFVF_DIFFUSE)
 #else
-#define D3DFVF_OBJECTVERTEX (D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1)
+#define D3DFVF_CUSTOMEVERTEX (D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1)
 #endif
 
 /**========================================================================
@@ -80,13 +80,13 @@ HRESULT InitGeometry()
 		}
 	}
 
-	if (FAILED(g_pd3dDevice->CreateVertexBuffer(50 * 2 * sizeof(OBJECTVERTEX), 0,
-		D3DFVF_OBJECTVERTEX, D3DPOOL_DEFAULT, &g_pVB, NULL)))
+	if (FAILED(g_pd3dDevice->CreateVertexBuffer(50 * 2 * sizeof(CUSTOMEVERTEX), 0,
+		D3DFVF_CUSTOMEVERTEX, D3DPOOL_DEFAULT, &g_pVB, NULL)))
 	{
 		return E_FAIL;
 	}
 
-	OBJECTVERTEX* pVertices;
+	CUSTOMEVERTEX* pVertices;
 
 	if (FAILED(g_pVB->Lock(0, 0, (void**)&pVertices, 0)))
 	{
@@ -212,8 +212,8 @@ void Render()
 		g_pd3dDevice->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_CAMERASPACEPOSITION);
 #endif
 
-		g_pd3dDevice->SetStreamSource(0, g_pVB, 0, sizeof(OBJECTVERTEX));
-		g_pd3dDevice->SetFVF(D3DFVF_OBJECTVERTEX);
+		g_pd3dDevice->SetStreamSource(0, g_pVB, 0, sizeof(CUSTOMEVERTEX));
+		g_pd3dDevice->SetFVF(D3DFVF_CUSTOMEVERTEX);
 		g_pd3dDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2 * 50 - 2);
 
 		//렌더링 종료

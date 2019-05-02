@@ -1,5 +1,7 @@
 #include "DirectX.h"
 #include "Object.h"
+#include "Plane.h"
+
 #include <math.h>
 DirectX * DirectX::pThis = NULL;
 
@@ -32,13 +34,6 @@ DirectX::DirectX()
 	D3DXVec3Normalize(&vUp, &vUp); //정규화 크기를 1로 만들어줌
 
 
-
-	
-	
-
-
-
-
 	distance = 1.0f;
 	fEilpse = GetTickCount();
 }
@@ -67,8 +62,14 @@ HRESULT DirectX::initDirectX(HWND _hWnd)
 	m_pDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
 	m_pDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
 
+
+
 	object = new Object(&m_pDevice);
 	object->Init();
+	object->setPosition(0.0f, 20.0f, 0.0f);
+	
+	plane = new Plane(&m_pDevice, "map128.bmp", "tile2.tga");
+	plane->Init();
 	return S_OK;
 }
 
@@ -87,7 +88,7 @@ void DirectX::Render()
 	{
 		
 		object->DrawMesh();
-			
+		plane->DrawPlane();
 		m_pDevice->EndScene();
 	}
 	
@@ -186,7 +187,8 @@ void DirectX::EyeMoved(LPARAM lParam)
 		move.y = forword.z * up.x - forword.x * up.z;
 		move.z = forword.x * up.y - forword.y * up.x;
 
-		move /= (500 / (origin_pos_x - moved_pos_x));
+		move /= (origin_pos_x - moved_pos_x);
+		D3DXVec3Normalize(&move, &move);
 
 		vEyePt -= move;
 		vForword -= move;
@@ -194,15 +196,17 @@ void DirectX::EyeMoved(LPARAM lParam)
 
 	else
 	{
-		float direct = 0.1f;
+		float direct = 1.0f;
 		
 		if(origin_pos_y - moved_pos_y > 0)
 			direct *= -1.0f;
-		
+		up = up * direct;
 
-		vEyePt.y += direct;
-		vForword.y += direct;
-		vUp.y += vEyePt.y + 1;
+		D3DXVec3Normalize(&up, &up);
+
+		vEyePt += up;
+		vForword += up;
+		vUp += up;
 
 	}
 
@@ -216,6 +220,9 @@ void DirectX::RotateMoved(LPARAM lParam)
 
 	float origin_pos_y = HIWORD(mouse_Pos);
 	float origin_pos_x = LOWORD(mouse_Pos);
+
+
+
 
 	mouse_Pos = lParam;
 }
@@ -234,6 +241,7 @@ void DirectX::Update()
 	if (GetTickCount() - fEilpse <= 0.1f)
 		return;
 	object->update(GetTickCount() - fEilpse);
+	//plane->Update();
 	
 	////vLookatPt = { 0.0f, 0.0f, 0.0f };
 	//if (GetKeyState(0x57) & 0x8000) //w
@@ -287,7 +295,7 @@ void DirectX::SetupMatrices()
 	m_pDevice->SetTransform(D3DTS_VIEW, &matView); // 생성한 뷰 행렬을 디바이스에 설정한다.
 
 	//카메라 세부 설정
-													  // 프로젝션 행렬을 정의하기 위해서는 시야각(FOV = Field Of View)과 종횡비(aspect ratio), 클리핑 평면의 값이 필요하다.
+													// 프로젝션 행렬을 정의하기 위해서는 시야각(FOV = Field Of View)과 종횡비(aspect ratio), 클리핑 평면의 값이 필요하다.
 	D3DXMATRIXA16 matProj;
 	//첫 번째 : 설정될 행렬
 	//두 번째 : 시야각
@@ -321,13 +329,13 @@ void DirectX::SetupLights()
 
 	//광원의 확산광 색깔의 밝기를 지정한다.
 	//광원의 종류를 설정한다(포인트 라이트, 다이렉션 라이트, 스포트 라이트)
-	light.Type = D3DLIGHT_DIRECTIONAL;
+	light.Type = D3DLIGHT_SPOT;
 	light.Diffuse.r = 1.0f;
 	light.Diffuse.g = 1.0f;
 	light.Diffuse.b = 1.0f;
 
 	//광원의 방향 설정
-	vecDir = D3DXVECTOR3(0, -1.0f, 0);
+	vecDir = D3DXVECTOR3(0.0f, -1.0f,0.0f);
 
 	//광원의 방향을 단위 벡터로 만든다.
 	D3DXVec3Normalize((D3DXVECTOR3*)&light.Direction, &vecDir);

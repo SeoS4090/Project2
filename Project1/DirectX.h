@@ -3,6 +3,7 @@
 #include "Defines.h"
 
 class Object;
+class Plane;
 class DirectX
 {
 private:
@@ -25,8 +26,8 @@ private:
 	LPDIRECT3DTEXTURE9		g_pTexHeight; // Texture ³ôÀÌ¸Ê
 	LPDIRECT3DTEXTURE9		g_pTexDiffuse; // Texture »ö±ò¸Ê
 
-	Object *				object;
-
+	Object	*				object;
+	Plane	*				plane;
 	float					fEilpse;
 protected:
 	LPDIRECT3D9				m_pD3D;

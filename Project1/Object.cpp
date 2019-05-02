@@ -23,42 +23,42 @@ HRESULT Object::initVB()
 {
 	InitTexture("dahyun.jpg");
 	// 상자(cube)를 랜더링하기 위해 8개의 정점 선언
-	OBJECTVERTEX vertices[8];
-	vertices[0].position = { -3.0f,3.0f,-3.0f };
+	CUSTOMEVERTEX vertices[8];
+	vertices[0].position = vertices[0].nomal = { -0.5f,0.5f,-0.5f };
 	vertices[0].tu = 0.0f; vertices[0].tv = 0.0f;
 
-	vertices[1].position  = { 3.0f,3.0f,-3.0f };
+	vertices[1].position = vertices[1].nomal = { 0.5f,0.5f,-0.5f };
 	vertices[1].tu = 1.0f; vertices[1].tv = 0.0f;
 
-	vertices[2].position = { 3.0f,3.0f,3.0f };
+	vertices[2].position = vertices[2].nomal = { 0.5f,0.5f,0.5f };
 	vertices[2].tu = 0.0f; vertices[2].tv = 0.0f;
 
-	vertices[3].position  = { -3.0f,3.0f,3.0f };
+	vertices[3].position = vertices[3].nomal = { -0.5f,0.5f,0.5f };
 	vertices[3].tu = 1.0f; vertices[3].tv = 0.0f;
 
-	vertices[4].position = { -3.0f,-3.0f,-3.0f };
+	vertices[4].position = vertices[4].nomal = { -0.5f,-0.5f,-0.5f };
 	vertices[4].tu = 0.0f; vertices[4].tv = 1.0f;
 
-	vertices[5].position  = { 3.0f,-3.0f,-3.0f };
+	vertices[5].position = vertices[5].nomal = { 0.5f,-0.5f,-0.5f };
 	vertices[5].tu = 1.0f; vertices[5].tv = 1.0f;
 
-	vertices[6].position = { 3.0f,-3.0f,3.0f };
+	vertices[6].position = vertices[6].nomal = { 0.5f,-0.5f,0.5f };
 	vertices[6].tu = 0.0f; vertices[6].tv = 1.0f;
 
-	vertices[7].position = { -3.0f,-3.0f,3.0f };
+	vertices[7].position = vertices[7].nomal = { -0.5f,-0.5f,0.5f };
 	vertices[7].tu = 1.0f; vertices[7].tv = 1.0f;
 	
 	
 	for (int i = 0; i < 8; i++)
 	{
 		vertices[i].Color = D3DCOLOR_ARGB(0, 255,200,200);
-		//D3DXVec3Normalize(&vertices[i].nomarl, &vertices[i].nomarl);
+		D3DXVec3Normalize(&vertices[i].nomal, &vertices[i].nomal);
 	}
 
 	// 정점 버퍼를 생성한다.
 	// 정점 구조체 3개를 저장할 메모리를 할당한다.
 	// FVF를 지정하여 보관할 데이터의 형식을 지정한다.
-	if (FAILED((*device)->CreateVertexBuffer(8 * sizeof(OBJECTVERTEX), 0, D3DFVF_OBJECTVERTEX,
+	if (FAILED((*device)->CreateVertexBuffer(8 * sizeof(CUSTOMEVERTEX), 0, D3DFVF_CUSTOMEVERTEX,
 		D3DPOOL_DEFAULT, &VB, NULL)))
 	{
 		return E_FAIL;
@@ -134,6 +134,12 @@ void Object::update(float fEilpse)
 	//D3DXMatrixRotationY(&m_Mat, GetTickCount() / 360.0f);
 }
 
+void Object::setPosition(float cx, float cy, float cz)
+{
+	D3DXMatrixIdentity(&m_Mat);
+	D3DXMatrixTranslation(&m_Mat, cx, cy, cz);
+}
+
 void Object::DrawMesh(D3DXMATRIXA16 * pMat)
 {
 	if (pMat == 0)
@@ -141,7 +147,7 @@ void Object::DrawMesh(D3DXMATRIXA16 * pMat)
 		pMat = new D3DXMATRIXA16();
 		D3DXMatrixIdentity(pMat);
 	}
-	(*device)->SetRenderState(D3DRS_LIGHTING, FALSE);
+	(*device)->SetRenderState(D3DRS_LIGHTING, TRUE);
 
 	(*device)->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 
@@ -169,10 +175,10 @@ void Object::DrawMesh(D3DXMATRIXA16 * pMat)
 
 	(*device)->SetTransform(D3DTS_WORLD, &(m_Mat * (*pMat)));
 	
-	(*device)->SetStreamSource(0, VB, 0, sizeof(OBJECTVERTEX));
+	(*device)->SetStreamSource(0, VB, 0, sizeof(CUSTOMEVERTEX));
 
 	// D3D에게 정점 셰이더 정보를 지정한다. 대부분의 경우에는 FVF만 지정한다.
-	(*device)->SetFVF(D3DFVF_OBJECTVERTEX);
+	(*device)->SetFVF(D3DFVF_CUSTOMEVERTEX);
 
 	// 인덱스 버퍼를 지정한다.
 	(*device)->SetIndices(IB);
