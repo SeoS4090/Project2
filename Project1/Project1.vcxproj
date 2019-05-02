@@ -21,10 +21,15 @@
   <ItemGroup>
     <ClCompile Include="DirectX.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Object.cpp" />
+    <ClCompile Include="Plane.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Defines.h" />
     <ClInclude Include="DirectX.h" />
     <ClInclude Include="Main.h" />
+    <ClInclude Include="Object.h" />
+    <ClInclude Include="Plane.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{30E4239F-EC73-4826-B0C2-900D94CC649D}</ProjectGuid>

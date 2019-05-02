@@ -6,10 +6,38 @@
 /**========================================================================
 * 윈도우 프로시저
 *=========================================================================*/
+
+bool clicked = false;
 LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	auto iter = HIWORD(wParam);
+	auto iter2s = LOWORD(wParam);
 	switch (msg)
 	{
+	case WM_LBUTTONDOWN:
+		clicked = true;
+		DirectX::GetInstance()->Clicked(lParam);
+		break;
+	case WM_MOUSEMOVE:
+		if (!clicked)
+			break;
+
+		if (wParam == MK_CONTROL)
+		{
+			DirectX::GetInstance()->EyeMoved(lParam);
+		}
+		else 	if (wParam == MK_LBUTTON)
+			DirectX::GetInstance()->RotateMoved(lParam);
+
+		break;
+	case WM_LBUTTONUP:
+		
+		clicked = false;
+		break;
+	case WM_MOUSEWHEEL:
+		DirectX::GetInstance()->Wheel(GET_WHEEL_DELTA_WPARAM(wParam) / 120);
+		
+		break ;
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
@@ -31,13 +59,10 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 	RegisterClassEx(&wc);
 
 	HWND hWnd = CreateWindow("D3D Hierarchy", "D3D Hierarchy", WS_OVERLAPPEDWINDOW,
-		0, 0, 500, 500, GetDesktopWindow(), NULL, wc.hInstance, NULL);
+		1920 - 850, 100, 800, 800, GetDesktopWindow(), NULL, wc.hInstance, NULL);
 
-	DirectX dx3;
+	DirectX::GetInstance()->initDirectX(hWnd);
 	
-	if (FAILED(dx3.initDirectX(hWnd)))
-		return -1;
-
 	ShowWindow(hWnd, SW_SHOWDEFAULT);
 	UpdateWindow(hWnd);
 
@@ -53,11 +78,8 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 		}
 		else
 		{
-			dx3.Render();
-			if (GetKeyState(VK_RETURN) & 0x8000 && GetKeyState(VK_MENU) & 0x8000)
-			{
-				dx3.initDirectX(hWnd);
-			}
+			DirectX::GetInstance()->Render();
+			DirectX::GetInstance()->Update();
 		}
 	}
 
