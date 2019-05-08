@@ -4,21 +4,12 @@
 
 class Object;
 class Plane;
+class Camera;
 class DirectX
 {
 private:
 	static DirectX *		pThis;
 	HWND					hWnd;
-
-	//카메라 변수
-	D3DXVECTOR3				vEyePt;
-	D3DXVECTOR3				vForword;
-	D3DXVECTOR3				vUp;
-	D3DXVECTOR3				vSide;
-
-	float					Ztheta; //Θ
-	float					XYtheta; // Φ
-	float					distance;
 
 
 
@@ -28,6 +19,8 @@ private:
 
 	Object	*				object;
 	Plane	*				plane;
+	Camera	*				camera;
+
 	float					fEilpse;
 protected:
 	LPDIRECT3D9				m_pD3D;
@@ -49,9 +42,9 @@ public:
 
 
 			void		Clicked(LPARAM lParam);
-			void		EyeMoved(LPARAM lParam);
+			/*void		EyeMoved(LPARAM lParam);
 			void		RotateMoved(LPARAM lParam);
-			void		Wheel(int scroll);
+			void		Wheel(int scroll);*/
 			void		Update();
 			void		SetupMatrices();
 			void		SetupLights();

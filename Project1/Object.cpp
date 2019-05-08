@@ -140,6 +140,16 @@ void Object::setPosition(float cx, float cy, float cz)
 	D3DXMatrixTranslation(&m_Mat, cx, cy, cz);
 }
 
+void Object::setScale(float cx, float cy, float cz) {
+
+	D3DXMATRIXA16 mat;
+	D3DXMatrixIdentity(&mat);
+	D3DXMatrixScaling(&mat, cx, cy, cz);
+	mat *= m_Mat;
+	m_Mat = mat;
+}
+
+
 void Object::DrawMesh(D3DXMATRIXA16 * pMat)
 {
 	if (pMat == 0)
@@ -147,7 +157,7 @@ void Object::DrawMesh(D3DXMATRIXA16 * pMat)
 		pMat = new D3DXMATRIXA16();
 		D3DXMatrixIdentity(pMat);
 	}
-	(*device)->SetRenderState(D3DRS_LIGHTING, TRUE);
+	(*device)->SetRenderState(D3DRS_LIGHTING, FALSE);
 
 	(*device)->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 

@@ -1,7 +1,7 @@
 #include "DirectX.h"
 #include "Object.h"
 #include "Plane.h"
-
+#include "Camera.h"
 #include <math.h>
 DirectX * DirectX::pThis = NULL;
 
@@ -14,28 +14,7 @@ DirectX * DirectX::GetInstance()
 
 DirectX::DirectX()
 {
-	vEyePt = { 0.0f, 0.0f, -3.0f }; //눈의 위치(0.0f, 3.0f, -5.0f)
-	vForword = { 0.0f, 0.0f, 1.0f }; // 눈이 바라보는 위치(0.0f, 0.0f, 0.0f)
-	vUp = { 0.0f, 1.0f, 0.0f }; // 윗 방향을 나타내는 상방 벡터(0.0f, 1.0f, 0.0f)
 
-	float r = sqrtf(pow(vForword.x, 2) + pow(vForword.y, 2) + pow(vForword.z, 2));
-
-	Ztheta = acosf(vForword.z / r);
-
-	if (vForword.x == 0) XYtheta = D3DX_PI / 2;
-	else XYtheta = atanf(vForword.y/vForword.x);
-
-	vForword = {r*sinf(Ztheta)*cosf(XYtheta),r*sinf(Ztheta)*sinf(XYtheta)  ,r*cosf(Ztheta)};
-
-	D3DXVec3Cross(&vSide, &vForword, &vUp);//외적
-
-	D3DXVec3Normalize(&vForword, &vForword); //정규화 크기를 1로 만들어줌
-	D3DXVec3Normalize(&vSide, &vSide); //정규화 크기를 1로 만들어줌
-	D3DXVec3Normalize(&vUp, &vUp); //정규화 크기를 1로 만들어줌
-
-
-	distance = 1.0f;
-	fEilpse = GetTickCount();
 }
 
 HRESULT DirectX::initDirectX(HWND _hWnd)
@@ -66,10 +45,16 @@ HRESULT DirectX::initDirectX(HWND _hWnd)
 
 	object = new Object(&m_pDevice);
 	object->Init();
-	object->setPosition(0.0f, 20.0f, 0.0f);
-	
+	object->setPosition(0.0f, 10.0f, 30.0f);
+	object->setScale(100.0f, 100.0f, 100.0f);
+
 	plane = new Plane(&m_pDevice, "map128.bmp", "tile2.tga");
 	plane->Init();
+
+
+	camera = new Camera();
+	camera->setcameraMode(true);
+	
 	return S_OK;
 }
 
@@ -132,7 +117,6 @@ void DirectX::ChangeWindow()
 
 DirectX::~DirectX()
 {
-	
 
 	if (m_pDevice != NULL)
 		m_pDevice->Release();
@@ -169,111 +153,14 @@ void DirectX::Clicked(LPARAM lParam)
 	mouse_Pos = lParam;
 }
 
-void DirectX::EyeMoved(LPARAM lParam)
-{
-	float moved_pos_y = HIWORD(lParam);
-	float moved_pos_x = LOWORD(lParam);
-
-	float origin_pos_y = HIWORD(mouse_Pos);
-	float origin_pos_x = LOWORD(mouse_Pos);
-
-	D3DXVECTOR3 move;
-	D3DXVECTOR3 forword = vForword - vEyePt;
-	D3DXVECTOR3 up = vUp + vEyePt;
-
-	if (abs((int)(origin_pos_x - moved_pos_x)) > abs((int)(origin_pos_y - moved_pos_y)))
-	{
-		move.x = forword.y * up.z - forword.z * up.y;
-		move.y = forword.z * up.x - forword.x * up.z;
-		move.z = forword.x * up.y - forword.y * up.x;
-
-		move /= (origin_pos_x - moved_pos_x);
-		D3DXVec3Normalize(&move, &move);
-
-		vEyePt -= move;
-		vForword -= move;
-	}
-
-	else
-	{
-		float direct = 1.0f;
-		
-		if(origin_pos_y - moved_pos_y > 0)
-			direct *= -1.0f;
-		up = up * direct;
-
-		D3DXVec3Normalize(&up, &up);
-
-		vEyePt += up;
-		vForword += up;
-		vUp += up;
-
-	}
-
-	mouse_Pos = lParam;
-}
-
-void DirectX::RotateMoved(LPARAM lParam)
-{
-	float moved_pos_y = HIWORD(lParam);
-	float moved_pos_x = LOWORD(lParam);
-
-	float origin_pos_y = HIWORD(mouse_Pos);
-	float origin_pos_x = LOWORD(mouse_Pos);
-
-
-
-
-	mouse_Pos = lParam;
-}
-
-void DirectX::Wheel(int scroll)
-{
-	D3DXVECTOR3 forword = vForword - vEyePt;
-	
-	
-	vEyePt += forword * scroll / 2.0f;
-	vForword += forword * scroll / 2.0f;
-}
-
 void DirectX::Update()
 {
 	if (GetTickCount() - fEilpse <= 0.1f)
 		return;
 	object->update(GetTickCount() - fEilpse);
 	//plane->Update();
+	camera->Update(GetTickCount() - fEilpse);
 	
-	////vLookatPt = { 0.0f, 0.0f, 0.0f };
-	//if (GetKeyState(0x57) & 0x8000) //w
-	//{
-	//	vEyePt.z += 0.1f;
-	//}
-	//if (GetKeyState(0x53) & 0x8000) //s
-	//	vEyePt.z -= 0.1f;
-
-	//if (GetKeyState(0x41) & 0x8000) //a
-	//{
-	//	vEyePt.x += 0.1f;
-	//}
-	//if (GetKeyState(0x44) & 0x8000) //d
-	//{
-	//	vEyePt.x -= 0.1f;
-	//}
-
-	//if (GetKeyState(VK_SPACE) & 0x8000) //d
-	//{
-	//	if (GetKeyState(VK_CONTROL) & 0x8000) //d
-	//		vEyePt.y -= 0.1f;
-	//	else
-	//		vEyePt.y += 0.1f;
-	//}
-
-
-	if (GetKeyState(VK_RETURN) & 0x8000)
-	{
-		vEyePt = { 0.0f, 0.0f, 0.0f }; //눈의 위치(0.0f, 3.0f, -5.0f)
-		vForword = { 0.0f,0.0f,1.0f };
-	}
 }
 
 void DirectX::SetupMatrices()
@@ -289,10 +176,8 @@ void DirectX::SetupMatrices()
 														//뷰 행렬(카메라)을 정의하기 위해서는 3가지 값이 필요하다.
 
 										  //뷰 행렬(카메라)
-	D3DXMATRIXA16 matView;
-	D3DXMatrixLookAtLH(&matView, &vEyePt, &vForword, &vUp);// 3가지 Point를 이용해 뷰 행렬을 생성한다.
-
-	m_pDevice->SetTransform(D3DTS_VIEW, &matView); // 생성한 뷰 행렬을 디바이스에 설정한다.
+	
+	m_pDevice->SetTransform(D3DTS_VIEW, &camera->getCamera()); // 생성한 뷰 행렬을 디바이스에 설정한다.
 
 	//카메라 세부 설정
 													// 프로젝션 행렬을 정의하기 위해서는 시야각(FOV = Field Of View)과 종횡비(aspect ratio), 클리핑 평면의 값이 필요하다.
@@ -302,7 +187,7 @@ void DirectX::SetupMatrices()
 	//세 번째 : 종횡비
 	//네 번째 : 근접 클리핑
 	//다섯 번째 : 원거리 클리핑
-	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 2, 1.0f, 0.5f, 100.0f);
+	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 2, 1.0f, 0.5f, 300.0f);
 
 
 	m_pDevice->SetTransform(D3DTS_PROJECTION, &matProj); // 생성한 프로젝션 행렬을 디바이스에 설정.
@@ -329,7 +214,7 @@ void DirectX::SetupLights()
 
 	//광원의 확산광 색깔의 밝기를 지정한다.
 	//광원의 종류를 설정한다(포인트 라이트, 다이렉션 라이트, 스포트 라이트)
-	light.Type = D3DLIGHT_SPOT;
+	light.Type = D3DLIGHT_DIRECTIONAL;
 	light.Diffuse.r = 1.0f;
 	light.Diffuse.g = 1.0f;
 	light.Diffuse.b = 1.0f;
@@ -343,7 +228,7 @@ void DirectX::SetupLights()
 	light.Range = 1000.0f; // 광원이 다다를 수 있는 최대거리
 	m_pDevice->SetLight(0, &light); // 디바이스에 광원 0번을 설치
 	m_pDevice->LightEnable(0, TRUE); // 광원 0번을 활성화 한다.
-	m_pDevice->SetRenderState(D3DRS_LIGHTING, TRUE);// 광원 설정을 활성화 한다.
+	m_pDevice->SetRenderState(D3DRS_LIGHTING, FALSE);// 광원 설정을 활성화 한다.
 
 													   //환경 광원의 값 설정
 	m_pDevice->SetRenderState(D3DRS_AMBIENT, 0x00202020);

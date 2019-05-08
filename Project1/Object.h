@@ -25,6 +25,7 @@ public:
 
 	virtual		void		update(float fEilpse);
 	void					setPosition(float cx, float cy, float cz);
+	void					setScale(float cx, float cy, float cz);
 	void					DrawMesh(D3DXMATRIXA16* pMat = 0);
 							Object(LPDIRECT3DDEVICE9* _deviece);
 							~Object();
