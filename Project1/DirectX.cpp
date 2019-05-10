@@ -2,6 +2,8 @@
 #include "Object.h"
 #include "Plane.h"
 #include "Camera.h"
+#include "InputManager.h"
+#include "Frustum.h"
 #include <math.h>
 DirectX * DirectX::pThis = NULL;
 
@@ -42,19 +44,22 @@ HRESULT DirectX::initDirectX(HWND _hWnd)
 	m_pDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
 
 
-
 	object = new Object(&m_pDevice);
 	object->Init();
 	object->setPosition(0.0f, 10.0f, 30.0f);
-	object->setScale(100.0f, 100.0f, 100.0f);
+	object->setScale(10.0f, 10.0f, 10.0f);
+
+	Camera::Getinstance()->addObject(object);
 
 	plane = new Plane(&m_pDevice, "map128.bmp", "tile2.tga");
 	plane->Init();
 
-
-	camera = new Camera();
-	camera->setcameraMode(true);
 	
+	
+	isHideFrustum = TRUE;
+	isLockFrustum = FALSE;
+
+	InputManager::Getinstance()->RegistKeyCode(VK_F1);
 	return S_OK;
 }
 
@@ -64,7 +69,8 @@ void DirectX::Render()
 	m_pDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(125, 125, 125), 1.0f, 0);
 	SetupLights();
 	SetupMatrices();
-	
+	if (!isLockFrustum) Frustum::Getinstance()->Make(&D3DXMATRIXA16(camera->Getinstance()->getCamera() * camera->Getinstance()->getProjection()));
+
 	D3DXVECTOR3 vXLine[2];
 	D3DXVECTOR3 vYLine[2];
 	D3DXVECTOR3 vZLine[2];
@@ -74,6 +80,9 @@ void DirectX::Render()
 		
 		object->DrawMesh();
 		plane->DrawPlane();
+		if (!isHideFrustum) Frustum::Getinstance()->Draw(m_pDevice);
+
+
 		m_pDevice->EndScene();
 	}
 	
@@ -148,10 +157,6 @@ HRESULT DirectX::RestoreDevice()
 }
 
 
-void DirectX::Clicked(LPARAM lParam)
-{
-	mouse_Pos = lParam;
-}
 
 void DirectX::Update()
 {
@@ -159,38 +164,25 @@ void DirectX::Update()
 		return;
 	object->update(GetTickCount() - fEilpse);
 	//plane->Update();
-	camera->Update(GetTickCount() - fEilpse);
+	camera->Getinstance()->Update(GetTickCount() - fEilpse);
 	
+	if (InputManager::Getinstance()->isKeyDown(VK_F1))
+	{
+		isLockFrustum = !isLockFrustum;
+		isHideFrustum = !isLockFrustum;
+	}
 }
 
 void DirectX::SetupMatrices()
 {
-	//월드 행렬
+	//월드 좌표 생성
 	D3DXMATRIXA16 matWorld;
 	D3DXMatrixIdentity(&matWorld);
-	//D3DXMatrixRotationX(&matWorld, GetTickCount() / 360.0f);
 	m_pDevice->SetTransform(D3DTS_WORLD, &matWorld); // 생성한 회전 행렬을 월드 행렬로 디바이스에 설정한다.
 
-
-	//카메라 위치 잡기
-														//뷰 행렬(카메라)을 정의하기 위해서는 3가지 값이 필요하다.
-
-										  //뷰 행렬(카메라)
-	
-	m_pDevice->SetTransform(D3DTS_VIEW, &camera->getCamera()); // 생성한 뷰 행렬을 디바이스에 설정한다.
-
-	//카메라 세부 설정
-													// 프로젝션 행렬을 정의하기 위해서는 시야각(FOV = Field Of View)과 종횡비(aspect ratio), 클리핑 평면의 값이 필요하다.
-	D3DXMATRIXA16 matProj;
-	//첫 번째 : 설정될 행렬
-	//두 번째 : 시야각
-	//세 번째 : 종횡비
-	//네 번째 : 근접 클리핑
-	//다섯 번째 : 원거리 클리핑
-	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 2, 1.0f, 0.5f, 300.0f);
-
-
-	m_pDevice->SetTransform(D3DTS_PROJECTION, &matProj); // 생성한 프로젝션 행렬을 디바이스에 설정.
+	//카메라 설정
+	m_pDevice->SetTransform(D3DTS_VIEW, &camera->Getinstance()->getCamera()); // 생성한 뷰 행렬을 디바이스에 설정한다.
+	m_pDevice->SetTransform(D3DTS_PROJECTION, &camera->Getinstance()->getProjection()); // 생성한 프로젝션 행렬을 디바이스에 설정.
 }
 
 void DirectX::SetupLights()

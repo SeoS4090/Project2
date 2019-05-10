@@ -33,12 +33,12 @@
     <ClCompile Include="InputManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Frustum.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DirectX.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Main.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Defines.h">
@@ -54,6 +54,9 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="InputManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Frustum.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

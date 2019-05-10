@@ -1,6 +1,7 @@
-#include "Object.h"
+ï»¿#include "Object.h"
 #include "Defines.h"
-
+#include "Camera.h"
+#include "InputManager.h"
 
 
 HRESULT Object::Init()
@@ -8,6 +9,11 @@ HRESULT Object::Init()
 	if (SUCCEEDED(initVB()) && SUCCEEDED(InitIB()))
 	{
 		D3DXMatrixIdentity(&m_Mat);
+		Center = { 0.0f,0.0f,0.0f };
+		m_Scale = { 1.0f, 1.0f, 1.0f };
+		Front = { 0.0f, 0.0f, 1.0f };
+		Up = { 0.0f, 1.0f, 0.0f };
+		Side = { 1.0f, 0.0f, 0.0f };
 
 		return S_OK;
 	}
@@ -17,12 +23,12 @@ HRESULT Object::Init()
 
 
 /**========================================================================
-* Á¤Á¡ ÃÊ±âÈ­ : Á¤Á¡ ¹öÆÛ¸¦ »ý¼ºÇÏ°í Á¤Á¡°ªÀ» Ã¤¿ö ³Ö´Â´Ù.
+* ì •ì  ì´ˆê¸°í™” : ì •ì  ë²„í¼ë¥¼ ìƒì„±í•˜ê³  ì •ì ê°’ì„ ì±„ì›Œ ë„£ëŠ”ë‹¤.
 *=========================================================================*/
 HRESULT Object::initVB()
 {
 	InitTexture("dahyun.jpg");
-	// »óÀÚ(cube)¸¦ ·£´õ¸µÇÏ±â À§ÇØ 8°³ÀÇ Á¤Á¡ ¼±¾ð
+	// ìƒìž(cube)ë¥¼ ëžœë”ë§í•˜ê¸° ìœ„í•´ 8ê°œì˜ ì •ì  ì„ ì–¸
 	CUSTOMEVERTEX vertices[8];
 	vertices[0].position = vertices[0].nomal = { -0.5f,0.5f,-0.5f };
 	vertices[0].tu = 0.0f; vertices[0].tv = 0.0f;
@@ -55,17 +61,17 @@ HRESULT Object::initVB()
 		D3DXVec3Normalize(&vertices[i].nomal, &vertices[i].nomal);
 	}
 
-	// Á¤Á¡ ¹öÆÛ¸¦ »ý¼ºÇÑ´Ù.
-	// Á¤Á¡ ±¸Á¶Ã¼ 3°³¸¦ ÀúÀåÇÒ ¸Þ¸ð¸®¸¦ ÇÒ´çÇÑ´Ù.
-	// FVF¸¦ ÁöÁ¤ÇÏ¿© º¸°üÇÒ µ¥ÀÌÅÍÀÇ Çü½ÄÀ» ÁöÁ¤ÇÑ´Ù.
+	// ì •ì  ë²„í¼ë¥¼ ìƒì„±í•œë‹¤.
+	// ì •ì  êµ¬ì¡°ì²´ 3ê°œë¥¼ ì €ìž¥í•  ë©”ëª¨ë¦¬ë¥¼ í• ë‹¹í•œë‹¤.
+	// FVFë¥¼ ì§€ì •í•˜ì—¬ ë³´ê´€í•  ë°ì´í„°ì˜ í˜•ì‹ì„ ì§€ì •í•œë‹¤.
 	if (FAILED((*device)->CreateVertexBuffer(8 * sizeof(CUSTOMEVERTEX), 0, D3DFVF_CUSTOMEVERTEX,
 		D3DPOOL_DEFAULT, &VB, NULL)))
 	{
 		return E_FAIL;
 	}
 
-	//Á¤Á¡ÀÇ ¹öÆÛ¸¦ °ªÀ¸·Î Ã¤¿î´Ù.
-	//Á¤Á¡ ¹öÆÛÀÇ Lock() ÇÔ¼ö¸¦ È£ÃâÇÏ¿© Æ÷ÀÎÅÍ¸¦ ¾ò¾î¿Â´Ù.
+	//ì •ì ì˜ ë²„í¼ë¥¼ ê°’ìœ¼ë¡œ ì±„ìš´ë‹¤.
+	//ì •ì  ë²„í¼ì˜ Lock() í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•˜ì—¬ í¬ì¸í„°ë¥¼ ì–»ì–´ì˜¨ë‹¤.
 	void* pVertices;
 
 	if (FAILED(VB->Lock(0, sizeof(vertices), (void**)&pVertices, 0)))
@@ -77,6 +83,8 @@ HRESULT Object::initVB()
 
 	VB->Unlock();
 
+	Center = { 0.0f, 1.0f, 0.0f };
+	
 	return S_OK;
 
 }
@@ -85,25 +93,25 @@ HRESULT Object::InitIB()
 {
 	CUSTOMINDEX indices[] =
 	{
-		{ 0, 1, 2 },{ 0, 2, 3 }, // À­¸é
-		{ 4, 5, 6 },{ 4, 7, 6 }, // ¾Æ·§¸é
-		{ 0, 3, 7 },{ 0, 7, 4 }, // ¿Þ¸é
-		{ 1, 5, 6 },{ 1, 6, 2 }, // ¿À¸¥¸é
-		{ 3, 2, 6 },{ 3, 6, 7 }, // µÞ¸é
-		{ 0, 4, 5 },{ 0, 5, 1 }, // ¾Õ¸é
+		{ 0, 1, 2 },{ 0, 2, 3 }, // ìœ—ë©´
+		{ 4, 5, 6 },{ 4, 7, 6 }, // ì•„ëž«ë©´
+		{ 0, 3, 7 },{ 0, 7, 4 }, // ì™¼ë©´
+		{ 1, 5, 6 },{ 1, 6, 2 }, // ì˜¤ë¥¸ë©´
+		{ 3, 2, 6 },{ 3, 6, 7 }, // ë’·ë©´
+		{ 0, 4, 5 },{ 0, 5, 1 }, // ì•žë©´
 	};
 
-	//ÀÎµ¦½º ¹öÆÛ »ý¼º
-	//D3DFMT_INDEX16Àº ÀÎµ¦½ºÀÇ ´ÜÀ§°¡ 16ºñÆ®¶ó´Â °Í.
-	//MYINDEX ±¸Á¶Ã¼¿¡¼­ WORDÇüÀ¸·Î ¼±¾ðÀ¸¹Ç·Î D3DFMT_INDEX16À» »ç¿ëÇÑ´Ù.
+	//ì¸ë±ìŠ¤ ë²„í¼ ìƒì„±
+	//D3DFMT_INDEX16ì€ ì¸ë±ìŠ¤ì˜ ë‹¨ìœ„ê°€ 16ë¹„íŠ¸ë¼ëŠ” ê²ƒ.
+	//MYINDEX êµ¬ì¡°ì²´ì—ì„œ WORDí˜•ìœ¼ë¡œ ì„ ì–¸ìœ¼ë¯€ë¡œ D3DFMT_INDEX16ì„ ì‚¬ìš©í•œë‹¤.
 	if (FAILED((*device)->CreateIndexBuffer(sizeof(indices) * sizeof(CUSTOMINDEX), 0, D3DFMT_INDEX16, D3DPOOL_DEFAULT, &IB, NULL)))
 	{
 		return E_FAIL;
 	}
 
-	//ÀÎµ¦½º ¹öÆÛ¸¦ °ªÀ¸·Î Ã¤¿î´Ù.
+	//ì¸ë±ìŠ¤ ë²„í¼ë¥¼ ê°’ìœ¼ë¡œ ì±„ìš´ë‹¤.
 	void* pIndices;
-	//ÀÎµ¦½º ¹öÆÛÀÇ Lock() ÇÔ¼ö¸¦ È£ÃâÇÏ¿© Æ÷ÀÎÅÍ¸¦ ¾ò¾î¿Í¼­ Á¤º¸¸¦ Ã¤¿î´Ù.
+	//ì¸ë±ìŠ¤ ë²„í¼ì˜ Lock() í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•˜ì—¬ í¬ì¸í„°ë¥¼ ì–»ì–´ì™€ì„œ ì •ë³´ë¥¼ ì±„ìš´ë‹¤.
 	if (FAILED(IB->Lock(0, sizeof(indices), (void**)&pIndices, 0)))
 	{
 		return E_FAIL;
@@ -123,30 +131,138 @@ HRESULT Object::InitTexture(const char * filename)
 		return E_FAIL;
 	}
 
-
-
 	return S_OK;
 }
 
+D3DXMATRIXA16 Object::getmovMat()
+{
+	D3DXMATRIXA16 mov; 		
+	D3DXMatrixTranslation(&mov, Center.x, Center.y, Center.z); 
+	return mov;
+}
 
 void Object::update(float fEilpse)
 {
-	//D3DXMatrixRotationY(&m_Mat, GetTickCount() / 360.0f);
+	D3DXVECTOR3 temp = Front;
+	temp.y = 0;
+	D3DXVec3Normalize(&temp, &temp);
+	if (InputManager::Getinstance()->isKeyPress(VK_W))
+	{	
+		Center += Front;/*
+		Center.z += temp.z;
+		Center.x += temp.x;*/
+	}
+		
+	if (InputManager::Getinstance()->isKeyPress(VK_S)) {
+		Center -= Front;
+		/*Center.z -= temp.z;
+		Center.x -= temp.x;*/
+	}
+
+	temp = Side;
+	temp.y = 0;
+	D3DXVec3Normalize(&temp, &temp);
+
+	if (InputManager::Getinstance()->isKeyPress(VK_D)) {
+		Center.z += temp.z;
+		Center.x += temp.x;
+	}
+	if (InputManager::Getinstance()->isKeyPress(VK_A)) {
+		Center.z -= temp.z;
+		Center.x -= temp.x;
+	}
+	
+	if (InputManager::Getinstance()->isKeyPress(VK_RIGHT))
+	{
+		m_theta += D3DX_PI / 180.0f;
+		D3DXMATRIXA16 rot;
+		D3DXMatrixRotationY(&rot, D3DX_PI / 180.0f);
+		D3DXVec3TransformCoord(&Front, &Front, &rot);
+		D3DXVec3Cross(&Side, &Up, &Front);
+	}
+	if (InputManager::Getinstance()->isKeyPress(VK_LEFT)) {
+		m_theta -= D3DX_PI / 180.0f;
+		D3DXMATRIXA16 rot;
+		D3DXMatrixRotationY(&rot, -D3DX_PI / 180.0f);
+		D3DXVec3TransformCoord(&Front, &Front, &rot);
+		D3DXVec3Cross(&Side, &Up, &Front);
+	}
+/*
+	if (InputManager::Getinstance()->isKeyPress(VK_UP))
+	{
+		m_theta += D3DX_PI / 180.0f;
+		D3DXMATRIXA16 rot;
+		D3DXMatrixRotationY(&rot, D3DX_PI / 180.0f);
+		D3DXVec3TransformCoord(&Front, &Front, &rot);
+		D3DXVec3Cross(&Side, &Up, &Front);
+	}
+	if (InputManager::Getinstance()->isKeyPress(VK_DOWN)) {
+		m_theta -= D3DX_PI / 180.0f;
+		D3DXMATRIXA16 rot;
+		D3DXMatrixRotationY(&rot, -D3DX_PI / 180.0f);
+		D3DXVec3TransformCoord(&Front, &Front, &rot);
+		D3DXVec3Cross(&Side, &Up, &Front);
+	}*/
+
+
+	if (InputManager::Getinstance()->isKeyPress(VK_SPACE))
+	{
+		if (InputManager::Getinstance()->isKeyPress(VK_CONTROL))
+			Center.y -= 1.0f;
+		else
+			Center.y += 1.0f;
+	}
+
+
+
+// ë§ˆìš°ìŠ¤ íšŒì „
+	{
+		D3DXMATRIXA16 matRot;
+
+		POINT moved = InputManager::Getinstance()->GetMouseMoved();
+		float Ytheta = moved.x * D3DX_PI / 180.0f / 10.0f;
+
+		float Xtheta = moved.y * D3DX_PI / 180.0f / 10.0f;
+
+		{
+			D3DXMATRIXA16 matRot;
+			D3DXMatrixRotationY(&matRot, Ytheta);
+			m_theta += Ytheta;
+			D3DXVec3TransformCoord(&Front, &Front, &matRot);
+			D3DXVec3TransformCoord(&Up, &Up, &matRot);
+			D3DXVec3Cross(&Side, &Up, &Front);
+		}
+
+		{
+
+			D3DXMATRIXA16 matRot;
+			D3DXVECTOR3 newView;
+			D3DXMatrixRotationAxis(&matRot, &Side, Xtheta);
+			D3DXVec3TransformCoord(&newView, &Front, &matRot);
+
+			D3DXVECTOR3 di(Front.x, 0.0f, Front.z);
+
+			if (fabsf(acos(D3DXVec3Dot(&newView, &di)) * 180.0f / D3DX_PI) > PLAYER_LOOK_UPDOWN_DEGREE)
+				return;
+			m_Xtheta += Xtheta;
+
+			D3DXVec3TransformCoord(&Front, &Front, &matRot);
+			D3DXVec3TransformCoord(&Up, &Up, &matRot);
+		}
+	}
 }
 
 void Object::setPosition(float cx, float cy, float cz)
 {
-	D3DXMatrixIdentity(&m_Mat);
-	D3DXMatrixTranslation(&m_Mat, cx, cy, cz);
+	Center = { cx,cy+1.0f,cz };
 }
 
 void Object::setScale(float cx, float cy, float cz) {
 
-	D3DXMATRIXA16 mat;
-	D3DXMatrixIdentity(&mat);
-	D3DXMatrixScaling(&mat, cx, cy, cz);
-	mat *= m_Mat;
-	m_Mat = mat;
+	m_Scale.x = cx;
+	m_Scale.y = cy;
+	m_Scale.z = cz;
+
 }
 
 
@@ -157,49 +273,51 @@ void Object::DrawMesh(D3DXMATRIXA16 * pMat)
 		pMat = new D3DXMATRIXA16();
 		D3DXMatrixIdentity(pMat);
 	}
-	(*device)->SetRenderState(D3DRS_LIGHTING, FALSE);
 
+	//*ìŠ¤ì¼€ì¼ë§ïƒ¨ìžì „ïƒ¨ì´ë™ïƒ¨ê³µì „ïƒ¨ë¶€ëª¨*/
+	D3DXMATRIXA16 temp;
+	D3DXMatrixScaling(&temp, m_Scale.x, m_Scale.y, m_Scale.z);
+	m_Mat = temp;
+	D3DXMatrixRotationY(&temp, m_theta);
+	m_Mat *= temp;
+	D3DXMatrixRotationAxis(&temp, &Side, m_Xtheta);
+	m_Mat *= temp;
+	
+
+	D3DXMatrixTranslation(&temp, Center.x, Center.y, Center.z);
+	m_Mat *= temp;
+	m_Mat *= *pMat;
+
+	(*device)->SetRenderState(D3DRS_LIGHTING, FALSE);
 	(*device)->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 
-
-	// TEXTUREÀÇ »ö°ú Á¤Á¡ÀÇ »ö(DIFFUSE)À» ¼¯´Â´Ù.
+	// TEXTUREì˜ ìƒ‰ê³¼ ì •ì ì˜ ìƒ‰(DIFFUSE)ì„ ì„žëŠ”ë‹¤.
 	(*device)->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 	(*device)->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
 
-	// alpha ¿¬»êÀ» »ç¿ëÇÏÁö ¾Ê´Â´Ù.
+	// alpha ì—°ì‚°ì„ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤.
 	(*device)->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
 	(*device)->SetTexture(0, Texture);
 
 	(*device)->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
 
-
-	//Ä«¸Þ¶ó ÁÂÇ¥°è ¼³Á¤À¸·Î »Ñ¸®±â ¶§¹®¿¡ vertext ¼³Á¤¿¡¼­ °¢°¢ ¼³Á¤ÇØµµ Àû¿ëÀÌ ¾ÈµÈ´Ù.
-	//Ä«¸Þ¶ó ÁÂÇ¥·á 0.0f ~ 1.0f ·Î ¼³Á¤ µÈ´Ù.
-	//(*device)->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_CAMERASPACEPOSITION);
-
-	//(*device)->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME);
-
-
-
-
-
-	(*device)->SetTransform(D3DTS_WORLD, &(m_Mat * (*pMat)));
+	(*device)->SetTransform(D3DTS_WORLD, &m_Mat);
 	
 	(*device)->SetStreamSource(0, VB, 0, sizeof(CUSTOMEVERTEX));
 
-	// D3D¿¡°Ô Á¤Á¡ ¼ÎÀÌ´õ Á¤º¸¸¦ ÁöÁ¤ÇÑ´Ù. ´ëºÎºÐÀÇ °æ¿ì¿¡´Â FVF¸¸ ÁöÁ¤ÇÑ´Ù.
+	// D3Dì—ê²Œ ì •ì  ì…°ì´ë” ì •ë³´ë¥¼ ì§€ì •í•œë‹¤. ëŒ€ë¶€ë¶„ì˜ ê²½ìš°ì—ëŠ” FVFë§Œ ì§€ì •í•œë‹¤.
 	(*device)->SetFVF(D3DFVF_CUSTOMEVERTEX);
 
-	// ÀÎµ¦½º ¹öÆÛ¸¦ ÁöÁ¤ÇÑ´Ù.
+	// ì¸ë±ìŠ¤ ë²„í¼ë¥¼ ì§€ì •í•œë‹¤.
 	(*device)->SetIndices(IB);
 
-	// ±âÇÏ Á¤º¸¸¦ Ãâ·ÂÇÏ±â À§ÇÑ DrawIndexPrimitive() ÇÔ¼ö¸¦ È£ÃâÇÑ´Ù.
-	// Ã¹ ¹øÂ° : ±×¸®°íÀÚ ÇÏ´Â ±âº» Å¸ÀÔÇü
-	// µÎ ¹øÂ° : ¿©·¯ ¿ÀºêÁ§Æ®¸¦ ÇÏ³ª·Î ¹­À»¶§ ´õÇØÁú ³Ñ¹ö.
-	// ¼¼ ¹øÂ° : ÂüÁ¶ÇÒ ÃÖ¼Ò ÀÎµ¦½º °ª
-	// ³× ¹øÂ° : ÀÌ¹ø È£Ãâ¿¡ ÂüÁ¶µÉ ¹öÅØ½ºÀÇ ¼ö
-	// ´Ù¼¸ ¹øÂ° : ÀÎµ¦½º ¹öÆÛ ³»¿¡¼­ ÀÐ±â¸¦ ½ÃÀÛÇÒ ¿ä¼Ò·ÎÀÇ ÀÎµ¦½º
-	// ¿©¼¸ ¹øÂ° : ±×¸®°íÀÚ ÇÏ´Â ±âº»ÇüÀÇ ¼ö
+	// ê¸°í•˜ ì •ë³´ë¥¼ ì¶œë ¥í•˜ê¸° ìœ„í•œ DrawIndexPrimitive() í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•œë‹¤.
+	// ì²« ë²ˆì§¸ : ê·¸ë¦¬ê³ ìž í•˜ëŠ” ê¸°ë³¸ íƒ€ìž…í˜•
+	// ë‘ ë²ˆì§¸ : ì—¬ëŸ¬ ì˜¤ë¸Œì íŠ¸ë¥¼ í•˜ë‚˜ë¡œ ë¬¶ì„ë•Œ ë”í•´ì§ˆ ë„˜ë²„.
+	// ì„¸ ë²ˆì§¸ : ì°¸ì¡°í•  ìµœì†Œ ì¸ë±ìŠ¤ ê°’
+	// ë„¤ ë²ˆì§¸ : ì´ë²ˆ í˜¸ì¶œì— ì°¸ì¡°ë  ë²„í…ìŠ¤ì˜ ìˆ˜
+	// ë‹¤ì„¯ ë²ˆì§¸ : ì¸ë±ìŠ¤ ë²„í¼ ë‚´ì—ì„œ ì½ê¸°ë¥¼ ì‹œìž‘í•  ìš”ì†Œë¡œì˜ ì¸ë±ìŠ¤
+	// ì—¬ì„¯ ë²ˆì§¸ : ê·¸ë¦¬ê³ ìž í•˜ëŠ” ê¸°ë³¸í˜•ì˜ ìˆ˜
 	(*device)->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 8, 0, 12);
 }
 
@@ -209,6 +327,7 @@ Object::Object(LPDIRECT3DDEVICE9* _deviece)
 	device = _deviece;
 	VB = NULL;
 	IB = NULL;
+	
 }
 
 

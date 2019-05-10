@@ -1,32 +1,29 @@
 #include "DirectX.h"
-#include "Main.h"
 #include "InputManager.h"
 
+/**
+@file Main.cpp
+@data 2019/09/08
+@author 서승현
+@version 0.0.1
+@brief 메인 프로그램
+*/
 
-/**========================================================================
-* 윈도우 프로시저
-*=========================================================================*/
-
-bool clicked = false;
+/*
+@fn LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+@data 2019/09/08
+@author 서승현
+@brief 윈도우 메시지 처리기
+@param hwnd 윈도우 핸들
+@param msg 윈도우 핸들에 들어오는 메시지 값
+@param wParam WPARAM 값
+@param lParam LPARAM 값
+@return 윈도우 처리 결과
+*/
 LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	auto iter = HIWORD(wParam);
-	auto iter2s = LOWORD(wParam);
 	switch (msg)
 	{
-
-	case WM_MOUSEWHEEL:
-		//DirectX::GetInstance()->Wheel(GET_WHEEL_DELTA_WPARAM(wParam) / 120);
-	{
-		HWND hWhnd = GetActiveWindow();
-		WINDOWINFO wininfo;
-		GetWindowInfo(hWhnd, &wininfo);
-		POINT pt = { 0,0 };
-		ClientToScreen(hWhnd, &pt);
-		SetCursorPos(pt.x, pt.y);
-		SendMessage(hWhnd, WM_DESTROY, 0, 0);
-	}
-		break ;	
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
@@ -35,9 +32,11 @@ LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-/**========================================================================
-* WinMain
-*=========================================================================*/
+/**
+@fn INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
+
+@brief 윈도우 API 메인 함수
+*/
 INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 {
 	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, MsgProc,
@@ -69,8 +68,11 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 		}
 		else
 		{
-			DirectX::GetInstance()->Render();
+			InputManager::Getinstance()->Update();
 			DirectX::GetInstance()->Update();
+
+			DirectX::GetInstance()->Render();
+			
 		}
 	}
 

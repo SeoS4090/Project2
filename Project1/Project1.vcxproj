@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DirectX.cpp" />
+    <ClCompile Include="Frustum.cpp" />
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Object.cpp" />
@@ -30,8 +31,8 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Defines.h" />
     <ClInclude Include="DirectX.h" />
+    <ClInclude Include="Frustum.h" />
     <ClInclude Include="InputManager.h" />
-    <ClInclude Include="Main.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="Plane.h" />
   </ItemGroup>

@@ -143,7 +143,8 @@ void InputManager::Clear()
 
 bool InputManager::isKeyPress(int keyCode)
 {
-	for (auto iter = m_vecKeyRegist.begin(); iter != m_vecKeyRegist.end(); iter++)
+	auto iter = m_vecKeyRegist.begin();
+	for (; iter != m_vecKeyRegist.end(); iter++)
 	{
 		if ((*iter).keyCode == keyCode)
 		{
@@ -151,6 +152,8 @@ bool InputManager::isKeyPress(int keyCode)
 		}
 	}
 
+	if (iter == m_vecKeyRegist.end())
+		RegistKeyCode(keyCode);
 	return false;
 }
 
