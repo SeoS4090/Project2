@@ -69,7 +69,7 @@ void Camera::Update(float fEiplse)
 	if (m_child != NULL)
 	{
 		m_vEye = { 0.0f, 10.0f, -30.0f };
-
+		m_vEye -= m_child->getFront();
 		D3DXVec3TransformCoord(&m_vEye, &m_vEye, &m_child->getMat());
 		
 		m_vView = m_vLookat = m_child->getFront()*100 + m_child->getPos();
