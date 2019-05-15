@@ -49,12 +49,12 @@ HRESULT DirectX::initDirectX(HWND _hWnd)
 	object->setPosition(0.0f, 10.0f, 30.0f);
 	object->setScale(10.0f, 10.0f, 10.0f);
 
-	Camera::Getinstance()->addObject(object);
+	//Camera::Getinstance()->addObject(object);
 
 	plane = new Plane(&m_pDevice, "map128.bmp", "tile2.tga");
 	plane->Init();
 
-	
+	moveMode = 0;
 	
 	isHideFrustum = TRUE;
 	isLockFrustum = FALSE;
@@ -162,15 +162,34 @@ void DirectX::Update()
 {
 	if (GetTickCount() - fEilpse <= 0.1f)
 		return;
-	object->update(GetTickCount() - fEilpse);
-	//plane->Update();
-	camera->Getinstance()->Update(GetTickCount() - fEilpse);
+
+
+	switch (moveMode)
+	{
+	case OBJECT:
+		object->update(GetTickCount() - fEilpse);
+		break;
+	case CAMERA:
+		camera->Getinstance()->Update(GetTickCount() - fEilpse);
+		break;
+	}
 	
 	if (InputManager::Getinstance()->isKeyDown(VK_F1))
 	{
 		isLockFrustum = !isLockFrustum;
 		isHideFrustum = !isLockFrustum;
 	}
+
+	if (InputManager::Getinstance()->isKeyDown(VK_F2))
+		plane->ChangeDrawMode();
+	if (InputManager::Getinstance()->isKeyDown(VK_F3))
+	{
+		moveMode++;
+		if (moveMode == MOVEMODE::END)
+			moveMode = 0;
+	}
+
+
 }
 
 void DirectX::SetupMatrices()

@@ -172,13 +172,16 @@ bool InputManager::isKeyUp(int keyCode)
 
 bool InputManager::isKeyDown(int keyCode)
 {
-	for (auto iter = m_vecKeyRegist.begin(); iter != m_vecKeyRegist.end(); iter++)
+	auto iter = m_vecKeyRegist.begin();
+	for (; iter != m_vecKeyRegist.end(); iter++)
 	{
 		if ((*iter).keyCode == keyCode)
 		{
 			return (*iter).KeyDown;
 		}
 	}
+	if (iter == m_vecKeyRegist.end())
+		RegistKeyCode(keyCode);
 
 	return false;
 }

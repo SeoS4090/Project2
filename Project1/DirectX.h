@@ -6,7 +6,12 @@ class Object;
 class Plane;
 class Camera;
 
-
+enum MOVEMODE
+{
+	CAMERA,
+	OBJECT,
+	END
+};
 
 /**
 @class DirectX
@@ -33,6 +38,8 @@ private:
 
 	bool					isHideFrustum;	///<프러스텀 숨기기
 	bool					isLockFrustum;	///<프러스텀 고정
+
+	int						moveMode;
 protected:
 	LPDIRECT3D9				m_pD3D;			///< directX 포인터
 	LPDIRECT3DDEVICE9		m_pDevice;		///< directX 디바이스

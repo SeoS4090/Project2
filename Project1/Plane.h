@@ -26,11 +26,14 @@ private:
 
 	HRESULT InitVB();
 	HRESULT InitIB();
+
+	BOOL					isWireFrame;
 public:
 	Plane(LPDIRECT3DDEVICE9 * device , const char * Height , const char * texture);
 
 	HRESULT Init();
 	void DrawPlane(D3DXMATRIXA16* pMat = 0);
+	void ChangeDrawMode() { isWireFrame = !isWireFrame; }
 	void Update();
 	~Plane();
 };

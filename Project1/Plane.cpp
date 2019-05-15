@@ -36,6 +36,8 @@ Plane::Plane(LPDIRECT3DDEVICE9 * _device, const char * _Height, const char * _te
 
 HRESULT Plane::Init()
 {
+	isWireFrame = FALSE;
+
 	D3DXMatrixIdentity(&m_Mat);
 	if(SUCCEEDED(InitVB()) && SUCCEEDED(InitIB()))
 		return S_OK;
@@ -57,6 +59,7 @@ void Plane::DrawPlane(D3DXMATRIXA16* pMat)
 		device->SetTexture(0, Diffuse);							// 0번 텍스쳐 스테이지에 텍스쳐 고정(색깔맵)
 		device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);	// 0번 텍스처 스테이지의 확대 필터
 		device->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);		// 0번 텍스처 : 0번 텍스처 인덱스 사용
+		device->SetRenderState(D3DRS_FILLMODE, isWireFrame ? D3DFILL_WIREFRAME : D3DFILL_SOLID);
 
 		device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		device->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
@@ -67,6 +70,7 @@ void Plane::DrawPlane(D3DXMATRIXA16* pMat)
 		device->SetFVF(D3DFVF_CUSTOMEVERTEX);
 		device->SetIndices(IB);
 		device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, cxHeight*czHeight, 0, (cxHeight - 1)*(czHeight - 1) * 2);
+		device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
 
 }
 
