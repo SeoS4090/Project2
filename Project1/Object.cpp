@@ -2,6 +2,7 @@
 #include "Defines.h"
 #include "Camera.h"
 #include "InputManager.h"
+#include "Frustum.h"
 
 
 HRESULT Object::Init()
@@ -57,7 +58,7 @@ HRESULT Object::initVB()
 	
 	for (int i = 0; i < 8; i++)
 	{
-		vertices[i].Color = D3DCOLOR_ARGB(0, 255,200,200);
+		vertices[i].Color = D3DCOLOR_ARGB(0, 125,125,125);
 		D3DXVec3Normalize(&vertices[i].nomal, &vertices[i].nomal);
 	}
 
@@ -273,11 +274,11 @@ void Object::DrawMesh(D3DXMATRIXA16 * pMat)
 		pMat = new D3DXMATRIXA16();
 		D3DXMatrixIdentity(pMat);
 	}
-
+	
 	//*스케일링자전이동공전부모*/
 	D3DXMATRIXA16 temp;
 	D3DXMatrixScaling(&temp, m_Scale.x, m_Scale.y, m_Scale.z);
-	m_Mat = temp;
+	m_Mat = temp;	
 	D3DXMatrixRotationY(&temp, m_theta);
 	m_Mat *= temp;
 	D3DXMatrixRotationAxis(&temp, &Side, m_Xtheta);
@@ -289,11 +290,12 @@ void Object::DrawMesh(D3DXMATRIXA16 * pMat)
 	m_Mat *= *pMat;
 
 	(*device)->SetRenderState(D3DRS_LIGHTING, FALSE);
-	(*device)->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+
+	(*device)->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE2X);
 
 	// TEXTURE의 색과 정점의 색(DIFFUSE)을 섞는다.
 	(*device)->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-	(*device)->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+	(*device)->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_CURRENT);
 
 	// alpha 연산을 사용하지 않는다.
 	(*device)->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
@@ -320,7 +322,6 @@ void Object::DrawMesh(D3DXMATRIXA16 * pMat)
 	// 여섯 번째 : 그리고자 하는 기본형의 수
 	(*device)->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 8, 0, 12);
 }
-
 
 Object::Object(LPDIRECT3DDEVICE9* _deviece)
 {

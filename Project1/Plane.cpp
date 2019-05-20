@@ -1,4 +1,5 @@
 #include "Plane.h"
+#include "Frustum.h"
 #include "Defines.h"
 
 
@@ -54,7 +55,7 @@ void Plane::DrawPlane(D3DXMATRIXA16* pMat)
 	}
 
 	// 애니메이션 행렬설정
-	//Animate();
+	
 	// 렌더링 시작
 		device->SetTexture(0, Diffuse);							// 0번 텍스쳐 스테이지에 텍스쳐 고정(색깔맵)
 		device->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);	// 0번 텍스처 스테이지의 확대 필터
@@ -69,7 +70,7 @@ void Plane::DrawPlane(D3DXMATRIXA16* pMat)
 		device->SetStreamSource(0, VB, 0, sizeof(CUSTOMEVERTEX));
 		device->SetFVF(D3DFVF_CUSTOMEVERTEX);
 		device->SetIndices(IB);
-		device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, cxHeight*czHeight, 0, (cxHeight - 1)*(czHeight - 1) * 2);
+		device->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, cxHeight*czHeight, 0, Triangles);
 		device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
 
 }
@@ -86,6 +87,7 @@ void Plane::Update()
 HRESULT Plane::InitVB()
 {
 	D3DLOCKED_RECT		d3drc;
+	PlaneMap = new D3DXVECTOR3[cxHeight * czHeight];	// 높이맵배열 생성
 
 	if (FAILED(device->CreateVertexBuffer(cxHeight*czHeight * sizeof(CUSTOMEVERTEX),
 		0, D3DFVF_CUSTOMEVERTEX,
@@ -104,8 +106,8 @@ HRESULT Plane::InitVB()
 	}
 
 	CUSTOMEVERTEX	v;
-	CUSTOMEVERTEX*	pV = (CUSTOMEVERTEX*)pVertices;
-
+	CUSTOMEVERTEX * pv = (CUSTOMEVERTEX*)pVertices;
+		
 	for (DWORD z = 0; z < czHeight; z++)
 	{
 		for (DWORD x = 0; x < cxHeight; x++)
@@ -117,10 +119,11 @@ HRESULT Plane::InitVB()
 			D3DXVec3Normalize(&v.nomal, &v.nomal);
 			v.tu = (float)x / (cxHeight - 1);
 			v.tv = (float)z / (czHeight - 1);
-			*pV++ = v;
+			*pv++ = v;
+			PlaneMap[z * cxHeight + x] = v.position;
 		}
-	}
-
+	}	
+	
 	VB->Unlock();
 	Height->UnlockRect(0);
 
@@ -174,4 +177,57 @@ HRESULT Plane::InitIB()
 
 Plane::~Plane()
 {
+}
+
+
+
+HRESULT Plane::ProcessFrustumCull()
+{
+	DWORD		i[4];	// 임시로 저장할 인덱스 정보
+	BOOL		b[4];	// 임시로 저장할 frustum culling결과값
+	CUSTOMINDEX		idx;
+	CUSTOMINDEX*	pI;
+
+	if (FAILED(IB->Lock(0, (cxHeight - 1)*(czHeight - 1) * 2 * sizeof(CUSTOMINDEX), (void**)&pI, 0)))
+		return E_FAIL;
+
+	Triangles = 0;
+
+	for (DWORD z = 0; z < czHeight - 1; z++)
+	{
+		for (DWORD x = 0; x < cxHeight - 1; x++)
+		{
+			i[0] = (z*cxHeight + x);			// 좌측 상단
+			i[1] = (z*cxHeight + x + 1);			// 우측 상단
+			i[2] = ((z + 1)*cxHeight + x);		// 좌측 하단
+			i[3] = ((z + 1)*cxHeight + x + 1);		// 우측 하단
+
+			b[0] = Frustum::Getinstance()->IsIn(&PlaneMap[i[0]]);	// 좌측상단 정점이 Frustum안에 있는가?
+			b[1] = Frustum::Getinstance()->IsIn(&PlaneMap[i[1]]);	// 우측상단 정점이 Frustum안에 있는가?
+			b[2] = Frustum::Getinstance()->IsIn(&PlaneMap[i[2]]);	// 좌측하단 정점이 Frustum안에 있는가?
+			if (b[0] | b[1] | b[2])	// 셋중에 하나라도 frustum안에 있으면 렌더링한다.
+			{
+				idx._0 = i[0];
+				idx._1 = i[1];
+				idx._2 = i[2];
+				*pI++ = idx;
+				Triangles++;			// 렌더링할 삼각형 개수 증가
+			}
+
+			b[2] = Frustum::Getinstance()->IsIn(&PlaneMap[i[2]]);	// 좌측하단 정점이 Frustum안에 있는가?
+			b[1] = Frustum::Getinstance()->IsIn(&PlaneMap[i[1]]);	// 우측상단 정점이 Frustum안에 있는가?
+			b[3] = Frustum::Getinstance()->IsIn(&PlaneMap[i[3]]);	// 우측하단 정점이 Frustum안에 있는가?
+			if (b[2] | b[1] | b[3])	// 셋중에 하나라도 frustum안에 있으면 렌더링한다.
+			{
+				idx._0 = i[2];
+				idx._1 = i[1];
+				idx._2 = i[3];
+				*pI++ = idx;
+				Triangles++;
+			}
+		}
+	}
+	IB->Unlock();
+
+	return S_OK;
 }

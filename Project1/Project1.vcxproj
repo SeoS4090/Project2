@@ -23,9 +23,11 @@
     <ClCompile Include="DirectX.cpp" />
     <ClCompile Include="Frustum.cpp" />
     <ClCompile Include="InputManager.cpp" />
+    <ClCompile Include="2DLabel.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="Plane.cpp" />
+    <ClCompile Include="QuadTree.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
@@ -33,8 +35,10 @@
     <ClInclude Include="DirectX.h" />
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="InputManager.h" />
+    <ClInclude Include="2DLabel.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="Plane.h" />
+    <ClInclude Include="QuadTree.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{30E4239F-EC73-4826-B0C2-900D94CC649D}</ProjectGuid>
@@ -95,6 +99,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>d3dx9.lib;d3d9.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>

@@ -1,5 +1,5 @@
 #include "Frustum.h"
-
+#include "Defines.h"
 Frustum * Frustum::pThis = NULL;
 
 Frustum::Frustum()
@@ -55,9 +55,9 @@ BOOL Frustum::Make(D3DXMATRIXA16 * pmatViewProj)
 
 	// 얻어진 월드좌표로 프러스텀 평면을 만든다
 	// 벡터가 프러스텀 안쪽에서 바깥쪽으로 나가는 평면들이다.
-	//	D3DXPlaneFromPoints(&m_plane[0], m_vtx+4, m_vtx+7, m_vtx+6);	// 상 평면(top)
-	//	D3DXPlaneFromPoints(&m_plane[1], m_vtx  , m_vtx+1, m_vtx+2);	// 하 평면(bottom)
-	//	D3DXPlaneFromPoints(&m_plane[2], m_vtx  , m_vtx+4, m_vtx+5);	// 근 평면(near)
+	D3DXPlaneFromPoints(&m_plane[0], m_vtx + 4, m_vtx + 7, m_vtx + 6);	// 상 평면(top)
+	D3DXPlaneFromPoints(&m_plane[1], m_vtx, m_vtx + 1, m_vtx + 2);	// 하 평면(bottom)
+	D3DXPlaneFromPoints(&m_plane[2], m_vtx, m_vtx + 4, m_vtx + 5);	// 근 평면(near)
 	D3DXPlaneFromPoints(&m_plane[3], m_vtx + 2, m_vtx + 6, m_vtx + 7);	// 원 평면(far)
 	D3DXPlaneFromPoints(&m_plane[4], m_vtx, m_vtx + 3, m_vtx + 7);	// 좌 평면(left)
 	D3DXPlaneFromPoints(&m_plane[5], m_vtx + 1, m_vtx + 5, m_vtx + 6);	// 우 평면(right)
@@ -69,12 +69,13 @@ BOOL Frustum::Make(D3DXMATRIXA16 * pmatViewProj)
 BOOL Frustum::IsIn(D3DXVECTOR3* pv)
 {
 	float		fDist;
+	int			i;
 
-	for(int i = 0 ; i < 6 ; i++ )
+	// 현재는 left, right, far plane만 적용한다.
+		for( i = 0 ; i < 6 ; i++ )
 	{
 		fDist = D3DXPlaneDotCoord(&m_plane[i], pv);
-		if (fDist > PLANE_EPSILON) // plane의 normal벡터가 면으로 향하고 있으므로 양수이면 프러스텀의 바깥쪽
-			return FALSE;	
+		if (fDist > PLANE_EPSILON) return FALSE;	// plane의 normal벡터가 right로 향하고 있으므로 양수이면 프러스텀의 오른쪽
 	}
 
 	return TRUE;
