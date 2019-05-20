@@ -62,23 +62,38 @@ POINT InputManager::GetMouseMoved()
 
 void InputManager::InitMousePoint()
 {
-	POINT pt;
+	POINT pt = {0,0};
 	RECT rec;
 	GetClientRect(m_hWnd, &rec);
+	ClientToScreen(m_hWnd, &pt);
+	rec.left += pt.x;
+	rec.right += pt.x;
+	rec.top += pt.y;
+	rec.bottom+= pt.y;
 
 	pt.x = fabsf(rec.right - rec.left) / 2 + rec.left;
-	pt.y = fabsf(rec.top - rec.bottom) / 2 + rec.top;
-
-	ClientToScreen(m_hWnd, &pt);
+	pt.y = fabsf(rec.top - rec.bottom) / 2 + rec.top;	
 	
+	SetCursorPos(pt.x,pt.y);
+	//if (fabsf(pt.x - m_Mouse.m_currentpt.x) >fabsf(rec.right - rec.left) / 2 - 10 || 
+	//	fabsf(pt.y - m_Mouse.m_currentpt.y) > fabsf(rec.top - rec.bottom) / 2 - 10)
+	//{
+	//	POINT mousePt;
+	//	GetCursorPos(&mousePt);
+	//	if (mousePt.x < rec.left)
+	//		mousePt.x = rec.left;
+	//	else if (mousePt.x > rec.right)
+	//		mousePt.x = rec.right;
 
-	
-	if (fabsf(pt.x - m_Mouse.m_currentpt.x) >fabsf(rec.right - rec.left) / 2 - 10 || 
-		fabsf(pt.y - m_Mouse.m_currentpt.y) > fabsf(rec.top - rec.bottom) / 2 - 10)/*(GetMouseMoved().x == 0 && GetMouseMoved().y == 0)*/
-	{
-		SetCursorPos(pt.x, pt.y);
-		m_Mouse.m_originpt = m_Mouse.m_currentpt = pt;
-	}
+	//	if (mousePt.y < rec.top)
+	//		mousePt.y = rec.top;
+	//	else if (mousePt.y > rec.bottom)
+	//		mousePt.y = rec.bottom;
+
+	//	
+	//	SetCursorPos(mousePt.x, mousePt.y);
+	//	m_Mouse.m_originpt = m_Mouse.m_currentpt = pt;
+	//}
 }
 
 
@@ -98,9 +113,6 @@ void InputManager::Update()
 	{
 		m_Mouse.Click = false;
 	}
-
-	
-	InitMousePoint();
 
 	for (auto iter = m_vecKeyRegist.begin(); iter != m_vecKeyRegist.end(); iter++)
 	{
@@ -172,13 +184,16 @@ bool InputManager::isKeyUp(int keyCode)
 
 bool InputManager::isKeyDown(int keyCode)
 {
-	for (auto iter = m_vecKeyRegist.begin(); iter != m_vecKeyRegist.end(); iter++)
+	auto iter = m_vecKeyRegist.begin();
+	for (; iter != m_vecKeyRegist.end(); iter++)
 	{
 		if ((*iter).keyCode == keyCode)
 		{
 			return (*iter).KeyDown;
 		}
 	}
+	if (iter == m_vecKeyRegist.end())
+		RegistKeyCode(keyCode);
 
 	return false;
 }

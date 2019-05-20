@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "InputManager.h"
 #include "Frustum.h"
+#include "2DLabel.h"
 #include <math.h>
 DirectX * DirectX::pThis = NULL;
 
@@ -41,25 +42,31 @@ HRESULT DirectX::initDirectX(HWND _hWnd)
 
 	m_pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 	m_pDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-	m_pDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
+	m_pDevice->SetRenderState(D3DRS_LIGHTING, TRUE);
 
 
 	object = new Object(&m_pDevice);
 	object->Init();
 	object->setPosition(0.0f, 10.0f, 30.0f);
 	object->setScale(10.0f, 10.0f, 10.0f);
+	//ShowCursor(false);
+	//Camera::Getinstance()->addObject(object);
 
-	Camera::Getinstance()->addObject(object);
-
-	plane = new Plane(&m_pDevice, "map128.bmp", "tile2.tga");
+	plane = new Plane(&m_pDevice, "tile.jpg", "tile2.tga");
 	plane->Init();
-
 	
+	label_Mode = new Label();
+	label_Mode->create(m_pDevice, "CAMERA", { 0,0 });
+
+	moveMode = 0;
 	
 	isHideFrustum = TRUE;
 	isLockFrustum = FALSE;
+/*
+	D3DXCreateFontA(m_pDevice, 20, 10, FW_BOLD, 1, false, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "궁서체", &UI_moveMode);
+	D3DXCreateSprite(m_pDevice, &UI_sprite);
+	UI_ch = "Camera";*/
 
-	InputManager::Getinstance()->RegistKeyCode(VK_F1);
 	return S_OK;
 }
 
@@ -69,17 +76,19 @@ void DirectX::Render()
 	m_pDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(125, 125, 125), 1.0f, 0);
 	SetupLights();
 	SetupMatrices();
-	if (!isLockFrustum) Frustum::Getinstance()->Make(&D3DXMATRIXA16(camera->Getinstance()->getCamera() * camera->Getinstance()->getProjection()));
-
-	D3DXVECTOR3 vXLine[2];
-	D3DXVECTOR3 vYLine[2];
-	D3DXVECTOR3 vZLine[2];
+	if (!isLockFrustum)
+		Frustum::Getinstance()->Make(&D3DXMATRIXA16(camera->Getinstance()->getCamera() * camera->Getinstance()->getProjection()));
+	
+	plane->ProcessFrustumCull();
+	
 
 	if (SUCCEEDED(m_pDevice->BeginScene()))
 	{
 		
+		label_Mode->Draw();
 		object->DrawMesh();
 		plane->DrawPlane();
+		
 		if (!isHideFrustum) Frustum::Getinstance()->Draw(m_pDevice);
 
 
@@ -162,15 +171,46 @@ void DirectX::Update()
 {
 	if (GetTickCount() - fEilpse <= 0.1f)
 		return;
-	object->update(GetTickCount() - fEilpse);
-	//plane->Update();
-	camera->Getinstance()->Update(GetTickCount() - fEilpse);
+
+
+	switch (moveMode)
+	{
+	case OBJECT:
+		object->update(GetTickCount() - fEilpse);
+		break;
+	case CAMERA:
+		camera->Getinstance()->Update(GetTickCount() - fEilpse);
+		break;
+	}
 	
 	if (InputManager::Getinstance()->isKeyDown(VK_F1))
 	{
 		isLockFrustum = !isLockFrustum;
 		isHideFrustum = !isLockFrustum;
 	}
+
+	if (InputManager::Getinstance()->isKeyDown(VK_F2))
+		plane->ChangeDrawMode();
+	if (InputManager::Getinstance()->isKeyDown(VK_F3))
+	{
+		moveMode++;
+		if (moveMode == MOVEMODE::END)
+			moveMode = 0;
+		switch (moveMode)
+		{
+		case OBJECT:
+			label_Mode->setText("Object");
+			break;
+		case CAMERA:
+			label_Mode->setText("Camera");
+			break;
+		}
+	}
+	if (InputManager::Getinstance()->isKeyDown(VK_MENU))
+		ShowCursor(true);
+	else if (InputManager::Getinstance()->isKeyUp(VK_MENU))
+		ShowCursor(false);
+
 }
 
 void DirectX::SetupMatrices()
@@ -187,6 +227,7 @@ void DirectX::SetupMatrices()
 
 void DirectX::SetupLights()
 {
+
 	//재질 설정
 	//재질은 디바이스에 단 하나만 설정될 수 있다.
 	D3DMATERIAL9 mtrl;

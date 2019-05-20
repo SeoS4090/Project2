@@ -24,6 +24,7 @@ LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
+
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
@@ -43,6 +44,7 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 		0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL,
 		"D3D Hierarchy", NULL };
 	
+	wc.hCursor = LoadCursor(0, IDC_CROSS);
 
 	RegisterClassEx(&wc);
 
@@ -56,7 +58,7 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 
 	MSG msg;
 	ZeroMemory(&msg, sizeof(msg));
-	ShowCursor(false);
+	//ShowCursor(false);
 	InputManager::Getinstance()->Init(hWnd);
 	InputManager::Getinstance()->RegistKeyCode(VK_CONTROL);
 	while (msg.message != WM_QUIT)

@@ -23,18 +23,63 @@ void Camera::setPos(float _x, float _y, float _z)
 void Camera::Update(float fEiplse)
 {
 	
-	/*///< 카메라 이동
-	if (InputManager::Getinstance()->isKeyPress(VK_W))			m_vEye += {m_vView.x, 0, m_vView.x};
-	if (InputManager::Getinstance()->isKeyPress(VK_S))			m_vEye -= {m_vView.x, 0, m_vView.x};
+	///< 카메라 이동
+	if (InputManager::Getinstance()->isKeyPress(VK_W))			m_vEye += m_vView;
+	if (InputManager::Getinstance()->isKeyPress(VK_S))			m_vEye -= m_vView;
 	if (InputManager::Getinstance()->isKeyPress(VK_D))			m_vEye -= m_vCross;
 	if (InputManager::Getinstance()->isKeyPress(VK_A))			m_vEye += m_vCross;
-	*/
+	
 	if (InputManager::Getinstance()->isKeyPress(VK_SPACE))
 	{
 		if (InputManager::Getinstance()->isKeyPress(VK_CONTROL))
 			m_vEye.y -= 1.0f;
 		else
 			m_vEye.y += 1.0f;
+	}
+
+
+	if (InputManager::Getinstance()->isKeyPress(VK_DOWN))
+	{
+		D3DXMATRIXA16 rot;
+		D3DXMatrixRotationAxis(&rot, &m_vCross, -D3DX_PI / 180.0f);
+		D3DXVec3TransformCoord(&m_vView, &m_vView, &rot);
+		D3DXVec3TransformCoord(&m_vUp, &m_vUp, &rot);
+		D3DXVec3Normalize(&m_vUp, &m_vUp);
+		D3DXVec3Normalize(&m_vView, &m_vView);
+		m_vLookat = m_vView * 20 + m_vEye;
+	}
+	if (InputManager::Getinstance()->isKeyPress(VK_UP))
+	{
+		D3DXMATRIXA16 rot;
+		D3DXMatrixRotationAxis(&rot, &m_vCross, D3DX_PI / 180.0f);
+		D3DXVec3TransformCoord(&m_vView, &m_vView, &rot);
+		D3DXVec3TransformCoord(&m_vUp, &m_vUp, &rot);
+		D3DXVec3Normalize(&m_vUp, &m_vUp);
+		D3DXVec3Normalize(&m_vView, &m_vView);
+		m_vLookat = m_vView * 20 + m_vEye;
+	}
+
+	if (InputManager::Getinstance()->isKeyPress(VK_RIGHT))
+	{
+		D3DXMATRIXA16 rot;
+		D3DXMatrixRotationY(&rot, D3DX_PI / 180.0f);
+		D3DXVec3TransformCoord(&m_vView, &m_vView, &rot);
+		D3DXVec3TransformCoord(&m_vUp, &m_vUp, &rot);
+		D3DXVec3TransformCoord(&m_vCross, &m_vCross, &rot);
+		D3DXVec3Normalize(&m_vCross, &m_vCross);
+		D3DXVec3Normalize(&m_vView, &m_vView);
+		m_vLookat = m_vView * 20 + m_vEye;
+	}
+	if (InputManager::Getinstance()->isKeyPress(VK_LEFT))
+	{
+		D3DXMATRIXA16 rot;
+		D3DXMatrixRotationY(&rot, -D3DX_PI / 180.0f);
+		D3DXVec3TransformCoord(&m_vView, &m_vView, &rot);
+		D3DXVec3TransformCoord(&m_vUp, &m_vUp, &rot);
+		D3DXVec3TransformCoord(&m_vCross, &m_vCross, &rot);
+		D3DXVec3Normalize(&m_vCross, &m_vCross);
+		D3DXVec3Normalize(&m_vView, &m_vView);
+		m_vLookat = m_vView * 20 + m_vEye;
 	}
 	
 
@@ -69,7 +114,7 @@ void Camera::Update(float fEiplse)
 	if (m_child != NULL)
 	{
 		m_vEye = { 0.0f, 10.0f, -30.0f };
-
+		m_vEye -= m_child->getFront();
 		D3DXVec3TransformCoord(&m_vEye, &m_vEye, &m_child->getMat());
 		
 		m_vView = m_vLookat = m_child->getFront()*100 + m_child->getPos();

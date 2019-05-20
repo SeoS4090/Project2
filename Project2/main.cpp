@@ -1,285 +1,1045 @@
-/**========================================================================
-* 텍스쳐
-* 메쉬에 텍스쳐를 입히는 공부를 한다.
-*=========================================================================*/
+//////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <Windows.h>
-#include <mmsystem.h>
-#include <d3d9.h>
+// File: d3dUtility.h  
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef __d3dUtilityH__
+
+#define __d3dUtilityH__
+
+
+
 #include <d3dx9.h>
 
-//SHOW_HOW_TO_USE_TCT가 선언된 것과 선언되지 않은 것의 컴파일 결과를 반드시 비교하자.
-//#define SHOW_HOW_TO_USE_TCT
+#include <string>
 
-/**========================================================================
-* 전역 변수
-*=========================================================================*/
 
-LPDIRECT3D9				g_pD3D = NULL;
-LPDIRECT3DDEVICE9		g_pd3dDevice = NULL;
-LPDIRECT3DVERTEXBUFFER9	g_pVB = NULL;
-LPDIRECT3DTEXTURE9		g_pTexture = NULL; // 텍스처 인터페이스 선언
 
-struct CUSTOMEVERTEX
+namespace d3d
+
 {
-	D3DXVECTOR3 position;
-	D3DCOLOR	color;
-	FLOAT		tu, tv; // 텍스처 좌표
-};
 
-//사용자 정점 구조체에 관한 정보를 나타내는 FVF 값
-#ifdef SHOW_HOW_TO_USE_TCI
-#define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZ | D3DFVF_DIFFUSE)
-#else
-#define D3DFVF_CUSTOMEVERTEX (D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1)
-#endif
+	bool InitD3D(
 
-/**========================================================================
-* 초기화
-*=========================================================================*/
-HRESULT InitD3D(HWND hWnd)
+		HINSTANCE hInstance,       // [in] Application instance.
+
+		int width, int height,    // [in] Backbuffer dimensions.
+
+		bool windowed,            // [in] Windowed (true)or full screen (false).
+
+		D3DDEVTYPE deviceType,    // [in] HAL or REF
+
+		IDirect3DDevice9** device);// [out]The created device.
+
+
+
+	int EnterMsgLoop(
+
+		bool(*ptr_display)(float timeDelta));
+
+
+
+	LRESULT CALLBACK WndProc(
+
+		HWND hwnd,
+
+		UINT msg,
+
+		WPARAM wParam,
+
+		LPARAM lParam);
+
+
+
+	template<class T> void Release(T t)
+
+	{
+
+		if (t)
+
+		{
+
+			t->Release();
+
+			t = 0;
+
+		}
+
+	}
+
+
+
+	template<class T> void Delete(T t)
+
+	{
+
+		if (t)
+
+		{
+
+			delete t;
+
+			t = 0;
+
+		}
+
+	}
+
+
+
+	const D3DXCOLOR      WHITE(D3DCOLOR_XRGB(255, 255, 255));
+
+	const D3DXCOLOR      BLACK(D3DCOLOR_XRGB(0, 0, 0));
+
+	const D3DXCOLOR        RED(D3DCOLOR_XRGB(255, 0, 0));
+
+	const D3DXCOLOR      GREEN(D3DCOLOR_XRGB(0, 255, 0));
+
+	const D3DXCOLOR       BLUE(D3DCOLOR_XRGB(0, 0, 255));
+
+	const D3DXCOLOR    YELLOW(D3DCOLOR_XRGB(255, 255, 0));
+
+	const D3DXCOLOR       CYAN(D3DCOLOR_XRGB(0, 255, 255));
+
+	const D3DXCOLOR    MAGENTA(D3DCOLOR_XRGB(255, 0, 255));
+
+
+
+	//
+
+	// Lights
+
+	//
+
+
+
+	D3DLIGHT9 InitDirectionalLight(D3DXVECTOR3* direction, D3DXCOLOR* color);
+
+	D3DLIGHT9 InitPointLight(D3DXVECTOR3* position, D3DXCOLOR* color);
+
+	D3DLIGHT9 InitSpotLight(D3DXVECTOR3* position, D3DXVECTOR3* direction, D3DXCOLOR* color);
+
+
+
+	//
+
+	// Materials
+
+	//
+
+
+
+	D3DMATERIAL9 InitMtrl(D3DXCOLOR a, D3DXCOLOR d, D3DXCOLOR s, D3DXCOLOR e, float p);
+
+
+
+	const D3DMATERIAL9 WHITE_MTRL = InitMtrl(WHITE, WHITE, WHITE, BLACK, 2.0f);
+
+	const D3DMATERIAL9 RED_MTRL = InitMtrl(RED, RED, RED, BLACK, 2.0f);
+
+	const D3DMATERIAL9 GREEN_MTRL = InitMtrl(GREEN, GREEN, GREEN, BLACK, 2.0f);
+
+	const D3DMATERIAL9 BLUE_MTRL = InitMtrl(BLUE, BLUE, BLUE, BLACK, 2.0f);
+
+	const D3DMATERIAL9 YELLOW_MTRL = InitMtrl(YELLOW, YELLOW, YELLOW, BLACK, 2.0f);
+
+}
+
+
+
+#endif // __d3dUtilityH__
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+// File: d3dUtility.cpp       
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+bool d3d::InitD3D(
+
+	HINSTANCE hInstance,
+
+	int width, int height,
+
+	bool windowed,
+
+	D3DDEVTYPE deviceType,
+
+	IDirect3DDevice9** device)
+
 {
-	if (NULL == (g_pD3D = Direct3DCreate9(D3D_SDK_VERSION)))
-		return E_FAIL;
+
+	//
+
+	// Create the main application window.
+
+	//
+
+
+
+	WNDCLASS wc;
+
+
+
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+
+	wc.lpfnWndProc = (WNDPROC)d3d::WndProc;
+
+	wc.cbClsExtra = 0;
+
+	wc.cbWndExtra = 0;
+
+	wc.hInstance = hInstance;
+
+	wc.hIcon = LoadIcon(0, IDI_APPLICATION);
+
+	wc.hCursor = LoadCursor(0, IDC_CROSS);
+
+	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+
+	wc.lpszMenuName = 0;
+
+	wc.lpszClassName = "Direct3D9App";
+
+
+
+	if (!RegisterClass(&wc))
+
+	{
+
+		::MessageBox(0, "RegisterClass() - FAILED", 0, 0);
+
+		return false;
+
+	}
+
+
+
+	HWND hwnd = 0;
+
+	hwnd = ::CreateWindow("Direct3D9App", "Direct3D9App",
+
+		WS_EX_TOPMOST,
+
+		0, 0, width, height,
+
+		0 /*parent hwnd*/, 0 /* menu */, hInstance, 0 /*extra*/);
+
+
+
+	if (!hwnd)
+
+	{
+
+		::MessageBox(0, "CreateWindow() - FAILED", 0, 0);
+
+		return false;
+
+	}
+
+
+
+	::ShowWindow(hwnd, SW_SHOW);
+
+	::UpdateWindow(hwnd);
+
+
+
+	//
+
+	// Init D3D:
+
+	//
+
+
+
+	HRESULT hr = 0;
+
+
+
+	// Step 1: Create the IDirect3D9 object.
+
+
+
+	IDirect3D9* d3d9 = 0;
+
+	d3d9 = Direct3DCreate9(D3D_SDK_VERSION);
+
+
+
+	if (!d3d9)
+
+	{
+
+		::MessageBox(0, "Direct3DCreate9() - FAILED", 0, 0);
+
+		return false;
+
+	}
+
+
+
+	// Step 2: Check for hardware vp.
+
+
+
+	D3DCAPS9 caps;
+
+	d3d9->GetDeviceCaps(D3DADAPTER_DEFAULT, deviceType, &caps);
+
+
+
+	int vp = 0;
+
+	if (caps.DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT)
+
+		vp = D3DCREATE_HARDWARE_VERTEXPROCESSING;
+
+	else
+
+		vp = D3DCREATE_SOFTWARE_VERTEXPROCESSING;
+
+
+
+	// Step 3: Fill out the D3DPRESENT_PARAMETERS structure.
+
+
 
 	D3DPRESENT_PARAMETERS d3dpp;
-	ZeroMemory(&d3dpp, sizeof(D3DPRESENT_PARAMETERS));
-	d3dpp.Windowed = TRUE;
+
+	d3dpp.BackBufferWidth = width;
+
+	d3dpp.BackBufferHeight = height;
+
+	d3dpp.BackBufferFormat = D3DFMT_A8R8G8B8;
+
+	d3dpp.BackBufferCount = 1;
+
+	d3dpp.MultiSampleType = D3DMULTISAMPLE_NONE;
+
+	d3dpp.MultiSampleQuality = 0;
+
 	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
-	d3dpp.EnableAutoDepthStencil = TRUE;
-	d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
 
-	if (FAILED(g_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd,
-		D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &g_pd3dDevice)))
+	d3dpp.hDeviceWindow = hwnd;
+
+	d3dpp.Windowed = windowed;
+
+	d3dpp.EnableAutoDepthStencil = true;
+
+	d3dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
+
+	d3dpp.Flags = 0;
+
+	d3dpp.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
+
+	d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+
+
+
+	// Step 4: Create the device.
+
+
+
+	hr = d3d9->CreateDevice(
+
+		D3DADAPTER_DEFAULT, // primary adapter
+
+		deviceType,        // device type
+
+		hwnd,               // window associated with device
+
+		vp,                // vertex processing
+
+		&d3dpp,            // present parameters
+
+		device);            // return created device
+
+
+
+	if (FAILED(hr))
+
 	{
-		return E_FAIL;
-	}
 
-	g_pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-	g_pd3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
-	g_pd3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+		// try again using a 16-bit depth buffer
 
-	return S_OK;
-}
+		d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
 
-/**========================================================================
-* 기하 정보 초기화
-* 정점 버퍼와 텍스쳐 생성
-*=========================================================================*/
-HRESULT InitGeometry()
-{
-	//D3DX 계열 함수를 사용하여 파일로부터 텍스처 생성
-	if (FAILED(D3DXCreateTextureFromFile(g_pd3dDevice, "nayeon.jpg", &g_pTexture)))
-	{	//현재 폴더에 파일이 없으면 상위 폴더 검색
-		if (FAILED(D3DXCreateTextureFromFile(g_pd3dDevice, "..\\nayeon.jpg", &g_pTexture)))
+
+
+		hr = d3d9->CreateDevice(
+
+			D3DADAPTER_DEFAULT,
+
+			deviceType,
+
+			hwnd,
+
+			vp,
+
+			&d3dpp,
+
+			device);
+
+
+
+		if (FAILED(hr))
+
 		{
-			MessageBox(NULL, "Could not find nayeon.jpg", "Texture.exe", MB_OK);
 
-			return E_FAIL;
+			d3d9->Release(); // done with d3d9 object
+
+			::MessageBox(0, "CreateDevice() - FAILED", 0, 0);
+
+			return false;
+
 		}
+
 	}
 
-	if (FAILED(g_pd3dDevice->CreateVertexBuffer(50 * 2 * sizeof(CUSTOMEVERTEX), 0,
-		D3DFVF_CUSTOMEVERTEX, D3DPOOL_DEFAULT, &g_pVB, NULL)))
-	{
-		return E_FAIL;
-	}
 
-	CUSTOMEVERTEX* pVertices;
 
-	if (FAILED(g_pVB->Lock(0, 0, (void**)&pVertices, 0)))
-	{
-		return E_FAIL;
-	}
+	d3d9->Release(); // done with d3d9 object
 
-	for (DWORD i = 0; i < 50; i++)
-	{
-		FLOAT theta = (2 * D3DX_PI * i) / (50 - 1);
 
-		pVertices[2 * i + 0].position = D3DXVECTOR3(sinf(theta), -1.0f, cosf(theta));
-		pVertices[2 * i + 0].color = 0xffffffff;
 
-#ifndef SHOW_HOW_TO_USE_TCI
-		//자동으로 좌표를 생성하지 않고 설정하는 방법.
-		pVertices[2 * i + 0].tu = ((FLOAT)i) / (50 - 1);
-		pVertices[2 * i + 0].tv = 1.0f;
+	return true;
 
-#endif
-
-		pVertices[2 * i + 1].position = D3DXVECTOR3(sinf(theta), 1.0f, cosf(theta));
-		pVertices[2 * i + 1].color = 0xff808080;
-
-#ifndef SHOW_HOW_TO_USE_TCI
-		//자동으로 좌표를 생성하지 않고 설정하는 방법.
-		pVertices[2 * i + 1].tu = ((FLOAT)i) / (50 - 1);
-		pVertices[2 * i + 1].tv = 0.0f;
-
-#endif
-	}
-
-	g_pVB->Unlock();
-
-	return S_OK;
 }
 
-/**========================================================================
-* 초기화 객체들 Release
-*=========================================================================*/
+
+
+int d3d::EnterMsgLoop(bool(*ptr_display)(float timeDelta))
+
+{
+
+	MSG msg;
+
+	::ZeroMemory(&msg, sizeof(MSG));
+
+
+
+	static float lastTime = (float)timeGetTime();
+
+
+
+	while (msg.message != WM_QUIT)
+
+	{
+
+		if (::PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+
+		{
+
+			::TranslateMessage(&msg);
+
+			::DispatchMessage(&msg);
+
+		}
+
+		else
+
+		{
+
+			float currTime = (float)timeGetTime();
+
+			float timeDelta = (currTime - lastTime)*0.001f;
+
+
+
+			ptr_display(timeDelta);
+
+
+
+			lastTime = currTime;
+
+		}
+
+	}
+
+	return msg.wParam;
+
+}
+
+
+
+D3DLIGHT9 d3d::InitDirectionalLight(D3DXVECTOR3* direction, D3DXCOLOR* color)
+
+{
+
+	D3DLIGHT9 light;
+
+	::ZeroMemory(&light, sizeof(light));
+
+
+
+	light.Type = D3DLIGHT_DIRECTIONAL;
+
+	light.Ambient = *color * 0.4f;
+
+	light.Diffuse = *color;
+
+	light.Specular = *color * 0.6f;
+
+	light.Direction = *direction;
+
+
+
+	return light;
+
+}
+
+
+
+D3DLIGHT9 d3d::InitPointLight(D3DXVECTOR3* position, D3DXCOLOR* color)
+
+{
+
+	D3DLIGHT9 light;
+
+	::ZeroMemory(&light, sizeof(light));
+
+
+
+	light.Type = D3DLIGHT_POINT;
+
+	light.Ambient = *color * 0.4f;
+
+	light.Diffuse = *color;
+
+	light.Specular = *color * 0.6f;
+
+	light.Position = *position;
+
+	light.Range = 1000.0f;
+
+	light.Falloff = 1.0f;
+
+	light.Attenuation0 = 1.0f;
+
+	light.Attenuation1 = 0.0f;
+
+	light.Attenuation2 = 0.0f;
+
+
+
+	return light;
+
+}
+
+
+
+D3DLIGHT9 d3d::InitSpotLight(D3DXVECTOR3* position, D3DXVECTOR3* direction, D3DXCOLOR* color)
+
+{
+
+	D3DLIGHT9 light;
+
+	::ZeroMemory(&light, sizeof(light));
+
+
+
+	light.Type = D3DLIGHT_SPOT;
+
+	light.Ambient = *color * 0.4f;
+
+	light.Diffuse = *color;
+
+	light.Specular = *color * 0.6f;
+
+	light.Position = *position;
+
+	light.Direction = *direction;
+
+	light.Range = 1000.0f;
+
+	light.Falloff = 1.0f;
+
+	light.Attenuation0 = 1.0f;
+
+	light.Attenuation1 = 0.0f;
+
+	light.Attenuation2 = 0.0f;
+
+	light.Theta = 0.5f;
+
+	light.Phi = 0.7f;
+
+
+
+	return light;
+
+}
+
+
+
+D3DMATERIAL9 d3d::InitMtrl(D3DXCOLOR a, D3DXCOLOR d, D3DXCOLOR s, D3DXCOLOR e, float p)
+
+{
+
+	D3DMATERIAL9 mtrl;
+
+	mtrl.Ambient = a;
+
+	mtrl.Diffuse = d;
+
+	mtrl.Specular = s;
+
+	mtrl.Emissive = e;
+
+	mtrl.Power = p;
+
+	return mtrl;
+
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+// File: d3dxcreatetext.cpp      
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+//
+
+// Globals
+
+//
+
+
+
+IDirect3DDevice9* Device = 0;
+
+
+
+const int Width = 640;
+
+const int Height = 480;
+
+
+
+ID3DXMesh* Text = 0;
+
+
+
+//
+
+// Framework functions
+
+//
+
+bool Setup()
+
+{
+
+	//
+
+	// Get a handle to a device context.
+
+	//
+
+	HDC hdc = CreateCompatibleDC(0);
+
+	// 인수로 주어진(0) hdc와 호환되는 메모리 DC를 생성.
+
+	HFONT hFont;
+
+	//GDI Object HFONT, HPEN, HBITMAP등 GDI Object들은 다 H가 붙음.
+
+	HFONT hFontOld;
+
+
+
+	//
+
+	// Describe the font we want.
+
+	//
+
+
+
+	/*
+
+	D3DXFONT_DESCA 구조체와 LOGFONT 구조체:
+
+	- D3DXFONT_DESCA는 d3dx9core.h에 정의.
+
+	- LOGFONT는 WinGDI.h에 정의.
+
+	- GDI를 사용하면 다국어가 잘 나옴.
+
+	- D3DXFONT는 한국어 등 외국어가 잘 깨짐.
+
+	- LOGFONT를 사용할 땐 CreateFontIndirect를 사용.
+
+	- D3DXFONT를 사용할 땐 D3DXCreateFontIndirect를 사용.
+
+	*/
+
+	LOGFONT lf;
+
+	ZeroMemory(&lf, sizeof(LOGFONT));
+
+
+
+	// CreateFont로 열거하는 것 보다, 구조체를 사용하면
+
+	// 멤버의 일부분만 변경해서 재사용하거나, 편리함 등에서 이점이 있다.
+
+	lf.lfHeight = 0;
+
+	lf.lfWidth = 0;
+
+	lf.lfEscapement = 0;
+
+	lf.lfOrientation = 0;
+
+	lf.lfWeight = 0;   // boldness, range 0(light) - 1000(bold)
+
+	lf.lfItalic = 0;
+
+	lf.lfUnderline = 0;
+
+	lf.lfStrikeOut = 0;
+
+	lf.lfCharSet = DEFAULT_CHARSET;
+
+	lf.lfOutPrecision = 0;
+
+	lf.lfClipPrecision = 0;
+
+	lf.lfQuality = 0;
+
+	lf.lfPitchAndFamily = 0;
+
+	strcpy((char*)lf.lfFaceName, "Times New Roman"); // font style
+
+	hFont = CreateFontIndirect(&lf);
+
+	// 폰트를 생성하는 함수(LOGFONT 구조체를 사용).
+
+	// 현재는 메쉬를 써서 출력하기 때문에 구조체는 그냥 초기화용도.
+
+	hFontOld = (HFONT)SelectObject(hdc, hFont);
+
+	// 현재 폰트를 선택. hFontOld에는 이전의 Font를 리턴받아서 저장.
+
+
+
+	//
+
+	// Create the text mesh based on the selected font in the HDC.
+
+	//
+
+	D3DXCreateText(Device, hdc, "안녕하세요",
+
+		0.001f, 0.4f, &Text, 0, 0);
+
+	// 디바이스, DC, 문자열, 코드 편차, z축의 부의 방향으로 밀어 내지는 텍스트의 양,
+
+	// 리턴받을 메쉬 포인터, 인접 버퍼 포인트, LPGLYPHMETRICSFLOAT 구조체의 배열의 포인터.
+
+	// 한글을 쓸 땐 D3DXCreateTextW에 L추가
+
+	// 영어로 쓸 땐 D3DXCreateTextA에 L없어도 됨.
+
+	// 텍스트 문자열의 3D 메쉬를 만들 때 D3DXCreateText를 사용.
+
+
+
+	// 원래의 폰트로 되돌리고, 이전 폰트 객체와 DC를 삭제.
+
+	SelectObject(hdc, hFontOld);
+
+	DeleteObject(hFont);
+
+	DeleteDC(hdc);
+
+
+
+
+
+	// 조명의 방향, 색상, 조명 종류.
+
+	D3DXVECTOR3 dir(0.0f, -0.5f, 1.0f);
+
+	D3DXCOLOR col = d3d::WHITE;
+
+	D3DLIGHT9 light = d3d::InitDirectionalLight(&dir, &col);
+
+
+
+	Device->SetLight(0, &light);
+
+	Device->LightEnable(0, true);
+
+
+
+	Device->SetRenderState(D3DRS_NORMALIZENORMALS, true);
+
+	Device->SetRenderState(D3DRS_SPECULARENABLE, true);
+
+
+
+
+
+	// 카메라의 방향, 대상, 업벡터.
+
+	D3DXVECTOR3 pos(0.0f, 1.5f, -3.3f);
+
+	D3DXVECTOR3 target(0.0f, 0.0f, 0.0f);
+
+	D3DXVECTOR3 up(0.0f, 1.0f, 0.0f);
+
+
+
+	D3DXMATRIX V;
+
+	D3DXMatrixLookAtLH(
+
+		&V,
+
+		&pos,
+
+		&target,
+
+		&up);
+
+
+
+	Device->SetTransform(D3DTS_VIEW, &V);
+
+
+
+	//
+
+	// Set projection matrix.
+
+	//
+
+
+
+	D3DXMATRIX proj;
+
+	D3DXMatrixPerspectiveFovLH(
+
+		&proj,
+
+		D3DX_PI * 0.25f, // 45 - degree
+
+		(float)Width / (float)Height,
+
+		0.01f,
+
+		1000.0f);
+
+	Device->SetTransform(D3DTS_PROJECTION, &proj);
+
+
+
+	return true;
+
+}
+
+
+
 void Cleanup()
+
 {
-	//해제 순서가 중요 인터페이스 생성의 역순으로 해제하자.
-	if (g_pTexture != NULL)
-		g_pTexture->Release();
 
-	if (g_pVB != NULL)
-		g_pVB->Release();
+	d3d::Release<ID3DXMesh*>(Text);
 
-	if (g_pd3dDevice != NULL)
-		g_pd3dDevice->Release();
-
-	if (g_pD3D != NULL)
-		g_pD3D->Release();
 }
 
-/**========================================================================
-* 행렬 설정 : 행렬에는 3가지가 있으며, 각각 월드, 뷰, 프로젝션 행렬이다.
-*=========================================================================*/
-void SetupMatrices()
+
+
+bool Display(float timeDelta)
+
 {
-	D3DXMATRIXA16 matWorld;
-	D3DXMatrixIdentity(&matWorld);
-	D3DXMatrixRotationX(&matWorld, timeGetTime() / 1000.0f);
-	g_pd3dDevice->SetTransform(D3DTS_WORLD, &matWorld);
 
-	D3DXVECTOR3 vEyePt(0.0f, 3.0f, -5.0f);
-	D3DXVECTOR3 vLookatPt(0.0f, 0.0f, 0.0f);
-	D3DXVECTOR3 vUpVec(0.0f, 1.0f, 0.0f);
+	if (Device)
 
-	D3DXMATRIXA16 matView;
-	D3DXMatrixLookAtLH(&matView, &vEyePt, &vLookatPt, &vUpVec);
-
-	g_pd3dDevice->SetTransform(D3DTS_VIEW, &matView);
-
-	D3DXMATRIXA16 matProj;
-	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4, 1.0f, 1.0f, 100.0f);
-	g_pd3dDevice->SetTransform(D3DTS_PROJECTION, &matProj);
-}
-
-/**========================================================================
-* 화면 그리기
-*=========================================================================*/
-void Render()
-{
-	if (NULL == g_pd3dDevice)
-		return;
-
-	// 후면 버퍼를 파란색(0, 0, 255)으로 지운다.
-	g_pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 255), 1.0f, 0);
-
-	SetupMatrices();
-
-	// 랜더링 시작
-	if (SUCCEEDED(g_pd3dDevice->BeginScene()))
 	{
-		//생성한 텍스처를 0번 텍스처 스테이지에 올린다.
-		//텍스처 스테이지는 여러 장의 텍스처와 색깔 정보를 섞어서 출력할 때 사용한다.
-		//여기서는 텍스처의 색깔과 정점의 색깔 정보를 modulate 연산으로 섞어서 출력한다.
-		g_pd3dDevice->SetTexture(0, g_pTexture); // 0번 텍스처 스테이지에 텍스처 고정
-		g_pd3dDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE); // MODULATE 연산으로 색깔을 섞음
-		g_pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE); // 첫 번째 섞을 색은 텍스처의 색
-		g_pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE); // 두 번째 섞을 색은 정점의 색
-		g_pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_DISABLE); // alpha 연산을 사용하지 않음 설정
 
-#ifndef SHOW_HOW_TO_USE_TCI
-																			   //D3D의 텍스처 좌표 생성 기능을 사용
-																			   //카메라 좌표계에서의 정점 정보를 사용하여 텍스처 좌표를 생성.
-																			   //4*4 크기의 텍스처 변환 행렬을 텍스처 좌표 인덱스(TCI=Texture Coord Index)전달 인자를
-																			   //사용하여 x, y, z TCI 좌표를 u, v 텍스처 좌표로 변환한다.
-																			   //사용한 것은 단순히(-1.0 ~ +1.0) 값을 (0.0 ~ 1.0)사이의 값으로 변환한는 행렬이다.
-																			   // 월드, 뷰, 프로젝션 변환을 거친 정점은 (-1.0 ~ +1.0)사이의 값을 갖게 된다.
-		D3DXMATRIXA16 mat;
-		mat._11 = 0.25f; mat._12 = 0.00f; mat._13 = 0.00f; mat._14 = 0.00f;
-		mat._21 = 0.25f; mat._22 = 0.00f; mat._23 = 0.00f; mat._24 = 0.00f;
-		mat._31 = 0.25f; mat._32 = 0.00f; mat._33 = 0.00f; mat._34 = 0.00f;
-		mat._41 = 0.25f; mat._42 = 0.00f; mat._43 = 0.00f; mat._44 = 0.00f;
+		//
 
-		//텍스처 변환행렬
-		g_pd3dDevice->SetTransform(D3DTS_TEXTURE0, &mat);
-		//2차원 텍스처 사용
-		g_pd3dDevice->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
-		//카메라 좌표계 변환
-		g_pd3dDevice->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_CAMERASPACEPOSITION);
-#endif
+		// Update: Spin the 3D text.
 
-		g_pd3dDevice->SetStreamSource(0, g_pVB, 0, sizeof(CUSTOMEVERTEX));
-		g_pd3dDevice->SetFVF(D3DFVF_CUSTOMEVERTEX);
-		g_pd3dDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2 * 50 - 2);
+		//
 
-		//렌더링 종료
-		g_pd3dDevice->EndScene();
+
+
+		D3DXMATRIX yRot, T;
+
+
+
+		static float y = 0.0f;
+
+
+
+		D3DXMatrixRotationY(&yRot, y);
+
+		y += timeDelta;
+
+
+
+		if (y >= 6.28f)
+
+			y = 0.0f;
+
+
+
+		D3DXMatrixTranslation(&T, -1.6f, 0.0f, 0.0f);
+
+		T = T * yRot;
+
+
+
+		Device->SetTransform(D3DTS_WORLD, &T);
+
+
+
+		//
+
+		// Render
+
+		//
+
+
+
+		Device->Clear(0, 0, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0x00000000, 1.0f, 0);
+
+		Device->BeginScene();
+
+
+
+		Device->SetMaterial(&d3d::RED_MTRL);
+
+		Text->DrawSubset(0);
+
+		// 텍스트 메쉬를 그린다.
+
+
+
+		Device->EndScene();
+
+		Device->Present(0, 0, 0, 0);
+
 	}
 
-	// 후면 버퍼를 보이는 화면으로 전환.
-	g_pd3dDevice->Present(NULL, NULL, NULL, NULL);
+	return true;
+
 }
 
-/**========================================================================
-* WinProc
-*=========================================================================*/
-LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+
+
+//
+
+// WndProc
+
+//
+
+LRESULT CALLBACK d3d::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+
 {
+
 	switch (msg)
+
 	{
+
 	case WM_DESTROY:
-		Cleanup();
-		PostQuitMessage(0);
-		return 0;
+
+		::PostQuitMessage(0);
+
+		break;
+
+
+
+	case WM_KEYDOWN:
+
+		if (wParam == VK_ESCAPE)
+
+			::DestroyWindow(hwnd);
+
+		break;
+
 	}
 
-	return DefWindowProc(hWnd, msg, wParam, lParam);
+	return ::DefWindowProc(hwnd, msg, wParam, lParam);
+
 }
 
-/**========================================================================
-* Window 생성
-*=========================================================================*/
-INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
+
+
+//
+
+// WinMain
+
+//
+
+int WINAPI WinMain(HINSTANCE hinstance,
+
+	HINSTANCE prevInstance,
+
+	PSTR cmdLine,
+
+	int showCmd)
+
 {
-	//윈도우 클래스 등록
-	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, MsgProc, 0L, 0L,
-		GetModuleHandle(NULL), NULL, NULL, NULL, NULL,
-		"D3D Texture", NULL };
 
-	//winclass 레지스터에 등록
-	RegisterClassEx(&wc);
+	if (!d3d::InitD3D(hinstance,
 
-	HWND hWnd = CreateWindow("D3D Texture", "D3D Texture", WS_OVERLAPPEDWINDOW, 100, 100, 1024, 768,
-		GetDesktopWindow(), NULL, NULL, wc.hInstance, NULL);
+		Width, Height, true, D3DDEVTYPE_HAL, &Device))
 
-	if (SUCCEEDED(InitD3D(hWnd)))
 	{
-		if (SUCCEEDED(InitGeometry()))
-		{
-			ShowWindow(hWnd, SW_SHOWDEFAULT);
-			UpdateWindow(hWnd);
 
-			MSG msg;
-			ZeroMemory(&msg, sizeof(msg));
+		::MessageBox(0, "InitD3D() - FAILED", 0, 0);
 
-			while (msg.message != WM_QUIT)
-			{
-				if (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE))
-				{
-					TranslateMessage(&msg);
-					DispatchMessage(&msg);
-				}
-				else
-					Render();
-			}
-		}
+		return 0;
+
 	}
 
-	//등록된 레지스트 winclass 릴리즈.
-	UnregisterClass("D3D Texture", wc.hInstance);
+
+
+	if (!Setup())
+
+	{
+
+		::MessageBox(0, "Setup() - FAILED", 0, 0);
+
+		return 0;
+
+	}
+
+
+
+	d3d::EnterMsgLoop(Display);
+
+
+
+	Cleanup();
+
+
+
+	Device->Release();
+
+
+
 	return 0;
+
 }
